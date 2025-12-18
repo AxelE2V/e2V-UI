@@ -7,6 +7,8 @@
 // ============================================================================
 
 import React, { useState, useMemo, useRef, useEffect, createContext, useContext, type ReactNode, type FC, type CSSProperties } from 'react';
+import { OperationsManagerDashboard } from './views/OperationsManagerDashboard';
+import { SiteOperatorDashboard } from './views/SiteOperatorDashboard';
 
 // ============================================================================
 // INTERNATIONALIZATION (i18n)
@@ -4639,7 +4641,7 @@ const App: FC = () => {
             </div>
           </div>
 
-          {activeTab === 'dashboard' && (
+          {activeTab === 'dashboard' && personaId === 'compliance_officer' && (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${industry.kpis.length}, 1fr)`, gap: '16px', marginBottom: '24px' }}>
                 {industry.kpis.map(kpi => {
@@ -4670,6 +4672,14 @@ const App: FC = () => {
               </div>
               <MassBalanceView industry={industry} />
             </>
+          )}
+
+          {activeTab === 'dashboard' && personaId === 'operations_manager' && (
+            <OperationsManagerDashboard industry={industry} flows={mockData.flows} lang={lang} />
+          )}
+
+          {activeTab === 'dashboard' && personaId === 'site_operator' && (
+            <SiteOperatorDashboard industry={industry} lang={lang} onNavigate={setActiveTab} />
           )}
 
           {activeTab === 'processconfig' && <ProcessFlowEditor industry={industry} onNavigate={setActiveTab} />}
