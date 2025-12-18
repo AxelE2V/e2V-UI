@@ -6,7 +6,7 @@
 // Process Configuration System with Evidence & Verification Management
 // ============================================================================
 
-import React, { useState, useMemo, createContext, useContext, type ReactNode, type FC, type CSSProperties } from 'react';
+import React, { useState, useMemo, useRef, useEffect, createContext, useContext, type ReactNode, type FC, type CSSProperties } from 'react';
 
 // ============================================================================
 // INTERNATIONALIZATION (i18n)
@@ -3967,6 +3967,544 @@ const IndustrySelector: FC<{ selected: IndustryId; onChange: (id: IndustryId) =>
 };
 
 // ============================================================================
+// AI AGENT (Claude Integration)
+// ============================================================================
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  navigationAction?: { tab: string; label: string };
+}
+
+interface AIAgentProps {
+  industry: Industry;
+  persona: Persona;
+  activeTab: string;
+  onNavigate: (tab: string) => void;
+  lang: Language;
+}
+
+const AIAgent: FC<AIAgentProps> = ({ industry, persona, activeTab, onNavigate, lang }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Navigation mappings
+  const navigationMap: Record<string, { tab: string; label: string; keywords: string[] }> = {
+    dashboard: { tab: 'dashboard', label: 'Dashboard', keywords: ['dashboard', 'accueil', 'home', 'overview', 'tableau de bord', 'kpi', 'metrics'] },
+    processconfig: { tab: 'processconfig', label: 'Process Configuration', keywords: ['process', 'configuration', 'workflow', 'étapes', 'steps', 'configure'] },
+    flows: { tab: 'flows', label: 'Material Flows', keywords: ['flows', 'flux', 'materials', 'matériaux', 'tracking', 'suivi'] },
+    documents: { tab: 'documents', label: 'Documents', keywords: ['documents', 'upload', 'files', 'fichiers', 'télécharger'] },
+    prn: { tab: 'prn', label: 'PRN Management', keywords: ['prn', 'packaging', 'recovery', 'emballage', 'notes', 'pern'] },
+    coa: { tab: 'coa', label: 'COA Verification', keywords: ['coa', 'certificate', 'analysis', 'certificat', 'analyse', 'verification', 'vérification', 'test'] },
+    errors: { tab: 'errors', label: 'Errors Tracking', keywords: ['errors', 'erreurs', 'issues', 'problems', 'problèmes', 'failed', 'échoué'] },
+    certificates: { tab: 'certificates', label: 'Certificates', keywords: ['certificates', 'certificats', 'iscc', 'compliance'] },
+    massbalance: { tab: 'massbalance', label: 'Mass Balance', keywords: ['mass', 'balance', 'bilan', 'masse', 'weight', 'poids'] },
+    reports: { tab: 'reports', label: 'Reports', keywords: ['reports', 'rapports', 'generate', 'générer', 'export'] },
+  };
+
+  // Detect navigation intent from message
+  const detectNavigationIntent = (message: string): { tab: string; label: string } | null => {
+    const lowerMessage = message.toLowerCase();
+    for (const [, nav] of Object.entries(navigationMap)) {
+      if (nav.keywords.some(keyword => lowerMessage.includes(keyword))) {
+        return { tab: nav.tab, label: nav.label };
+      }
+    }
+    return null;
+  };
+
+  // Build system prompt with context
+  const buildSystemPrompt = () => {
+    const tabs = Object.entries(navigationMap).map(([, v]) => `- ${v.label} (${v.tab})`).join('\n');
+    return `Tu es l'assistant IA de la plateforme eco₂Veritas, spécialisé dans la conformité et traçabilité pour l'économie circulaire.
+
+Contexte actuel:
+- Industrie: ${industry.name}
+- Rôle utilisateur: ${persona.title}
+- Onglet actif: ${activeTab}
+- Langue: ${lang === 'fr' ? 'Français' : 'English'}
+
+Onglets disponibles dans l'interface:
+${tabs}
+
+Tu peux aider l'utilisateur à:
+1. Naviguer vers les différentes sections de l'interface
+2. Comprendre les données de conformité (PRN, COA, certificats)
+3. Expliquer les processus de vérification
+4. Répondre aux questions sur l'économie circulaire
+
+Quand l'utilisateur veut naviguer quelque part, indique clairement l'onglet cible en utilisant le format: [NAVIGATE:tab_name]
+
+Réponds de manière concise et professionnelle. Utilise la même langue que l'utilisateur.`;
+  };
+
+  // Call Claude API
+  const callClaudeAPI = async (userMessage: string): Promise<string> => {
+    const apiKey = import.meta.env.VITE_CLAUDE_API_KEY;
+
+    // If no API key, use local simulation
+    if (!apiKey) {
+      return simulateResponse(userMessage);
+    }
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          system: buildSystemPrompt(),
+          messages: [
+            ...messages.map(m => ({ role: m.role, content: m.content })),
+            { role: 'user', content: userMessage }
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.content[0].text;
+    } catch (error) {
+      console.error('Claude API error:', error);
+      return simulateResponse(userMessage);
+    }
+  };
+
+  // Simulate response when API is not available
+  const simulateResponse = (userMessage: string): string => {
+    const nav = detectNavigationIntent(userMessage);
+    const lowerMessage = userMessage.toLowerCase();
+
+    // Navigation responses
+    if (nav) {
+      if (lang === 'fr') {
+        return `Je vous redirige vers ${nav.label}. [NAVIGATE:${nav.tab}]\n\nCette section vous permet de ${getTabDescription(nav.tab, 'fr')}.`;
+      }
+      return `I'm redirecting you to ${nav.label}. [NAVIGATE:${nav.tab}]\n\nThis section allows you to ${getTabDescription(nav.tab, 'en')}.`;
+    }
+
+    // Help responses
+    if (lowerMessage.includes('help') || lowerMessage.includes('aide') || lowerMessage.includes('comment')) {
+      if (lang === 'fr') {
+        return `Je suis l'assistant eco₂Veritas. Voici ce que je peux faire pour vous:
+
+• **Navigation**: Dites "montre-moi les erreurs" ou "aller au dashboard"
+• **PRN/COA**: Demandez des explications sur les certificats
+• **Conformité**: Questions sur ${industry.name}
+
+Que souhaitez-vous faire?`;
+      }
+      return `I'm the eco₂Veritas assistant. Here's what I can do:
+
+• **Navigation**: Say "show me errors" or "go to dashboard"
+• **PRN/COA**: Ask about certificates and verification
+• **Compliance**: Questions about ${industry.name}
+
+What would you like to do?`;
+    }
+
+    // Default response
+    if (lang === 'fr') {
+      return `Je comprends votre question concernant "${userMessage.slice(0, 50)}...".
+
+Pour ${industry.name}, je peux vous aider à naviguer vers:
+- **Dashboard** pour voir les KPIs
+- **COA Verification** pour les certificats d'analyse
+- **PRN Management** pour les notes de récupération
+- **Errors** pour suivre les problèmes
+
+Quel aspect vous intéresse?`;
+    }
+    return `I understand your question about "${userMessage.slice(0, 50)}...".
+
+For ${industry.name}, I can help you navigate to:
+- **Dashboard** to see KPIs
+- **COA Verification** for analysis certificates
+- **PRN Management** for recovery notes
+- **Errors** to track issues
+
+Which aspect interests you?`;
+  };
+
+  const getTabDescription = (tab: string, langKey: 'fr' | 'en'): string => {
+    const descriptions: Record<string, { fr: string; en: string }> = {
+      dashboard: { fr: 'visualiser les KPIs et métriques clés', en: 'view key KPIs and metrics' },
+      processconfig: { fr: 'configurer les étapes du processus de conformité', en: 'configure compliance process steps' },
+      flows: { fr: 'suivre les flux de matériaux', en: 'track material flows' },
+      documents: { fr: 'gérer et vérifier les documents', en: 'manage and verify documents' },
+      prn: { fr: 'gérer les PRN/PERN pour les emballages', en: 'manage PRN/PERN for packaging' },
+      coa: { fr: 'vérifier les certificats d\'analyse', en: 'verify certificates of analysis' },
+      errors: { fr: 'suivre et résoudre les erreurs', en: 'track and resolve errors' },
+      certificates: { fr: 'gérer les certificats ISCC et de conformité', en: 'manage ISCC and compliance certificates' },
+      massbalance: { fr: 'vérifier le bilan masse', en: 'verify mass balance' },
+      reports: { fr: 'générer des rapports de conformité', en: 'generate compliance reports' },
+    };
+    return descriptions[tab]?.[langKey] || '';
+  };
+
+  // Handle send message
+  const handleSend = async () => {
+    if (!inputValue.trim() || isLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      role: 'user',
+      content: inputValue.trim(),
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    setIsLoading(true);
+
+    try {
+      const response = await callClaudeAPI(userMessage.content);
+
+      // Parse navigation command from response
+      const navMatch = response.match(/\[NAVIGATE:(\w+)\]/);
+      let navigationAction: { tab: string; label: string } | undefined;
+      let cleanedResponse = response;
+
+      if (navMatch) {
+        const targetTab = navMatch[1];
+        const navInfo = navigationMap[targetTab];
+        if (navInfo) {
+          navigationAction = { tab: navInfo.tab, label: navInfo.label };
+          cleanedResponse = response.replace(/\[NAVIGATE:\w+\]/g, '').trim();
+        }
+      }
+
+      const assistantMessage: ChatMessage = {
+        id: `msg-${Date.now()}-resp`,
+        role: 'assistant',
+        content: cleanedResponse,
+        timestamp: new Date(),
+        navigationAction,
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+
+      // Auto-navigate after a short delay
+      if (navigationAction) {
+        setTimeout(() => {
+          onNavigate(navigationAction!.tab);
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Focus input when opened
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
+
+  // Quick action buttons
+  const quickActions = lang === 'fr'
+    ? [
+        { label: 'Dashboard', action: () => onNavigate('dashboard') },
+        { label: 'Voir erreurs', action: () => onNavigate('errors') },
+        { label: 'COA', action: () => onNavigate('coa') },
+      ]
+    : [
+        { label: 'Dashboard', action: () => onNavigate('dashboard') },
+        { label: 'View errors', action: () => onNavigate('errors') },
+        { label: 'COA', action: () => onNavigate('coa') },
+      ];
+
+  return (
+    <div style={{ position: 'fixed', bottom: '20px', left: '280px', zIndex: 1000 }}>
+      {/* Chat Window */}
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          bottom: '70px',
+          left: 0,
+          width: '380px',
+          height: '500px',
+          background: tokens.colors.cream[50],
+          borderRadius: tokens.radius.xl,
+          boxShadow: tokens.shadow.lg,
+          border: `1px solid ${tokens.colors.cream[400]}`,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Header */}
+          <div style={{
+            padding: '16px',
+            borderBottom: `1px solid ${tokens.colors.cream[400]}`,
+            background: tokens.colors.brand[600],
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '50%',
+                background: 'rgba(255,255,255,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Icon name="workflow" size={20} color="#FFF" />
+              </div>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#FFF' }}>
+                  eco₂Veritas Assistant
+                </div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.8)' }}>
+                  {lang === 'fr' ? 'Propulsé par Claude' : 'Powered by Claude'}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                border: 'none',
+                borderRadius: tokens.radius.sm,
+                padding: '6px',
+                cursor: 'pointer',
+              }}
+            >
+              <Icon name="close" size={16} color="#FFF" />
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div style={{
+            flex: 1,
+            overflow: 'auto',
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+          }}>
+            {messages.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '20px', color: tokens.colors.text.muted }}>
+                <Icon name="workflow" size={40} color={tokens.colors.brand[400]} />
+                <p style={{ fontSize: '14px', fontWeight: 600, margin: '12px 0 8px', color: tokens.colors.text.primary }}>
+                  {lang === 'fr' ? 'Bienvenue!' : 'Welcome!'}
+                </p>
+                <p style={{ fontSize: '12px', lineHeight: 1.5 }}>
+                  {lang === 'fr'
+                    ? 'Je peux vous aider à naviguer dans l\'interface et répondre à vos questions sur la conformité.'
+                    : 'I can help you navigate the interface and answer your compliance questions.'}
+                </p>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
+                  {quickActions.map((qa, i) => (
+                    <button
+                      key={i}
+                      onClick={qa.action}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: tokens.radius.full,
+                        border: `1px solid ${tokens.colors.brand[400]}`,
+                        background: 'transparent',
+                        color: tokens.colors.brand[600],
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {qa.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {messages.map(msg => (
+              <div
+                key={msg.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                }}
+              >
+                <div style={{
+                  maxWidth: '85%',
+                  padding: '10px 14px',
+                  borderRadius: msg.role === 'user'
+                    ? `${tokens.radius.lg} ${tokens.radius.lg} 4px ${tokens.radius.lg}`
+                    : `${tokens.radius.lg} ${tokens.radius.lg} ${tokens.radius.lg} 4px`,
+                  background: msg.role === 'user' ? tokens.colors.brand[600] : tokens.colors.cream[200],
+                  color: msg.role === 'user' ? '#FFF' : tokens.colors.text.primary,
+                }}>
+                  <div style={{ fontSize: '13px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    {msg.content}
+                  </div>
+                  {msg.navigationAction && (
+                    <div style={{
+                      marginTop: '10px',
+                      paddingTop: '10px',
+                      borderTop: `1px solid ${msg.role === 'user' ? 'rgba(255,255,255,0.2)' : tokens.colors.cream[400]}`,
+                    }}>
+                      <button
+                        onClick={() => onNavigate(msg.navigationAction!.tab)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 10px',
+                          borderRadius: tokens.radius.sm,
+                          border: 'none',
+                          background: msg.role === 'user' ? 'rgba(255,255,255,0.2)' : tokens.colors.accent.pale,
+                          color: msg.role === 'user' ? '#FFF' : tokens.colors.brand[700],
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        <Icon name="arrowRight" size={12} color={msg.role === 'user' ? '#FFF' : tokens.colors.brand[700]} />
+                        {lang === 'fr' ? 'Aller à' : 'Go to'} {msg.navigationAction.label}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {isLoading && (
+              <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                <div style={{
+                  padding: '12px 16px',
+                  borderRadius: `${tokens.radius.lg} ${tokens.radius.lg} ${tokens.radius.lg} 4px`,
+                  background: tokens.colors.cream[200],
+                  display: 'flex',
+                  gap: '4px',
+                }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: tokens.colors.brand[400], animation: 'pulse 1s infinite' }} />
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: tokens.colors.brand[400], animation: 'pulse 1s infinite 0.2s' }} />
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: tokens.colors.brand[400], animation: 'pulse 1s infinite 0.4s' }} />
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input */}
+          <div style={{
+            padding: '12px 16px',
+            borderTop: `1px solid ${tokens.colors.cream[400]}`,
+            background: tokens.colors.cream[100],
+          }}>
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              alignItems: 'center',
+            }}>
+              <input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder={lang === 'fr' ? 'Posez une question...' : 'Ask a question...'}
+                style={{
+                  flex: 1,
+                  padding: '10px 14px',
+                  borderRadius: tokens.radius.lg,
+                  border: `1px solid ${tokens.colors.cream[400]}`,
+                  background: tokens.colors.cream[50],
+                  fontSize: '13px',
+                  fontFamily: 'inherit',
+                  outline: 'none',
+                }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!inputValue.trim() || isLoading}
+                style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: tokens.radius.lg,
+                  border: 'none',
+                  background: inputValue.trim() ? tokens.colors.brand[600] : tokens.colors.cream[400],
+                  cursor: inputValue.trim() ? 'pointer' : 'not-allowed',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon name="arrowRight" size={18} color="#FFF" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat Bubble Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          border: 'none',
+          background: `linear-gradient(135deg, ${tokens.colors.brand[600]} 0%, ${tokens.colors.brand[700]} 100%)`,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: tokens.shadow.lg,
+          transition: 'transform 200ms ease',
+        }}
+      >
+        <Icon name={isOpen ? 'close' : 'workflow'} size={24} color="#FFF" />
+      </button>
+
+      {/* Pulse animation */}
+      {!isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: '-4px',
+          right: '-4px',
+          width: '16px',
+          height: '16px',
+          borderRadius: '50%',
+          background: tokens.colors.action.main,
+          border: '2px solid #FFF',
+        }} />
+      )}
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 0.4; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+// ============================================================================
 // MAIN APP
 // ============================================================================
 
@@ -4080,6 +4618,13 @@ const App: FC = () => {
       </main>
 
       <IndustrySelector selected={industryId} onChange={setIndustryId} />
+      <AIAgent
+        industry={industry}
+        persona={persona}
+        activeTab={activeTab}
+        onNavigate={setActiveTab}
+        lang={lang}
+      />
     </div>
     </LanguageContext.Provider>
   );
