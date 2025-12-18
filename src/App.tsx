@@ -2773,20 +2773,17 @@ const ProcessFlowEditor: FC<{ industry: Industry; onNavigate?: (tab: string) => 
 // ============================================================================
 
 const PRNManagementView: FC<{ industry: Industry }> = ({ industry }) => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
-  // Get process steps from industry configuration (dynamic)
-  const processConfig = defaultProcessConfigurations[industry.id];
-  const processSteps = processConfig.steps.map((step, index) => ({
-    id: index + 1,
-    key: step.id,
-    label: step.label,
-    icon: step.icon,
-    description: step.description,
-    // Simulate status based on step position
-    status: index < processConfig.steps.length - 2 ? 'verified' as const :
-            index === processConfig.steps.length - 1 ? 'flagged' as const : 'pending' as const,
-  }));
+  // PRN-specific sub-process steps (distinct from main industry process)
+  const processSteps = [
+    { id: 1, key: 'registration', label: lang === 'fr' ? 'Enregistrement NPWD' : 'NPWD Registration', icon: 'document', description: lang === 'fr' ? 'Inscription au National Packaging Waste Database' : 'Registration with National Packaging Waste Database', status: 'verified' as const },
+    { id: 2, key: 'dataCollection', label: lang === 'fr' ? 'Collecte données' : 'Data Collection', icon: 'reports', description: lang === 'fr' ? 'Collecte des données d\'emballage' : 'Collection of packaging data', status: 'verified' as const },
+    { id: 3, key: 'obligationCalc', label: lang === 'fr' ? 'Calcul obligations' : 'Obligation Calculation', icon: 'scale', description: lang === 'fr' ? 'Calcul des obligations de recyclage' : 'Calculate recycling obligations', status: 'verified' as const },
+    { id: 4, key: 'acquisition', label: lang === 'fr' ? 'Acquisition PRN' : 'PRN Acquisition', icon: 'certificate', description: lang === 'fr' ? 'Achat des PRN/PERN' : 'Purchase PRN/PERN certificates', status: 'pending' as const },
+    { id: 5, key: 'verification', label: lang === 'fr' ? 'Vérification' : 'Verification', icon: 'checkCircle', description: lang === 'fr' ? 'Vérification des certificats' : 'Verify certificates', status: 'pending' as const },
+    { id: 6, key: 'compliance', label: lang === 'fr' ? 'Rapport conformité' : 'Compliance Report', icon: 'trophy', description: lang === 'fr' ? 'Soumission rapport annuel' : 'Annual compliance submission', status: 'flagged' as const },
+  ];
 
   // Mock PRN data by material type
   const prnData = [
@@ -2932,18 +2929,16 @@ const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
   const [selectedCOA, setSelectedCOA] = useState<COADocument | null>(null);
   const [showFailedOnly, setShowFailedOnly] = useState(false);
 
-  // Get process steps from industry configuration (dynamic)
-  const processConfig = defaultProcessConfigurations[industry.id];
-  const verificationSteps = processConfig.steps.map((step, index) => ({
-    id: index + 1,
-    key: step.id,
-    label: step.label,
-    icon: step.icon,
-    description: step.description,
-    // Simulate status based on step position (first half verified, last steps pending/flagged)
-    status: index < processConfig.steps.length - 2 ? 'verified' as const :
-            index === processConfig.steps.length - 1 ? 'flagged' as const : 'pending' as const,
-  }));
+  // COA-specific verification sub-process steps (distinct from main industry process)
+  const verificationSteps = [
+    { id: 1, key: 'supplierQualification', label: lang === 'fr' ? 'Qualification fournisseur' : 'Supplier Qualification', icon: 'complianceOfficer', status: 'verified' as const },
+    { id: 2, key: 'documentReception', label: lang === 'fr' ? 'Réception document' : 'Document Reception', icon: 'document', status: 'verified' as const },
+    { id: 3, key: 'productIdentification', label: lang === 'fr' ? 'Identification produit' : 'Product Identification', icon: 'search', status: 'verified' as const },
+    { id: 4, key: 'batchTracking', label: lang === 'fr' ? 'Traçabilité lot' : 'Batch Tracking', icon: 'flows', status: 'verified' as const },
+    { id: 5, key: 'testResultsReview', label: lang === 'fr' ? 'Revue des tests' : 'Test Results Review', icon: 'reports', status: 'pending' as const },
+    { id: 6, key: 'specificationCheck', label: lang === 'fr' ? 'Vérification specs' : 'Specification Check', icon: 'checkCircle', status: 'pending' as const },
+    { id: 7, key: 'authorization', label: lang === 'fr' ? 'Autorisation' : 'Authorization', icon: 'certificate', status: 'flagged' as const },
+  ];
 
   // Mock COA data with detailed test results
   const coaData: COADocument[] = [
@@ -3030,10 +3025,12 @@ const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
   const totalCOAs = coaData.length;
   const verifiedCOAs = coaData.filter(c => c.status === 'verified').length;
   const flaggedCOAs = coaData.filter(c => c.status === 'flagged').length;
-  const totalTests = coaData.reduce((sum, c) => sum + c.tests, 0);
-  const passedTests = coaData.reduce((sum, c) => sum + c.passed, 0);
+  // Exclude pending COAs from error rate calculation
+  const completedCOAs = coaData.filter(c => c.status !== 'pending');
+  const totalTests = completedCOAs.reduce((sum, c) => sum + c.tests, 0);
+  const passedTests = completedCOAs.reduce((sum, c) => sum + c.passed, 0);
   const failedTests = totalTests - passedTests;
-  const errorRate = (((totalTests - passedTests) / totalTests) * 100).toFixed(1);
+  const errorRate = totalTests > 0 ? (((totalTests - passedTests) / totalTests) * 100).toFixed(1) : '0.0';
 
   // Get all failed tests across all COAs
   const allFailedTests = coaData.flatMap(coa =>
@@ -3570,17 +3567,47 @@ const ErrorsTrackingView: FC<{ industry: Industry }> = ({ industry }) => {
 
 const Sidebar: FC<{ industry: Industry; persona: Persona; collapsed: boolean; activeTab: string; onTabChange: (tab: string) => void }> = ({ industry, persona, collapsed, activeTab, onTabChange }) => {
   const { t } = useLanguage();
-  const navItems = [
+
+  // Base navigation items for all industries
+  const baseNavItems = [
     { id: 'dashboard', label: t.nav.dashboard, icon: 'home' },
     { id: 'processconfig', label: t.nav.processConfig, icon: 'workflow' },
     { id: 'flows', label: `${industry.terminology.input}s`, icon: 'flows' },
     { id: 'documents', label: t.nav.documents, icon: 'document' },
-    { id: 'prn', label: t.nav.prn, icon: 'certificate' },
-    { id: 'coa', label: t.nav.coa, icon: 'document' },
+  ];
+
+  // Industry-specific navigation items
+  const industrySpecificNavItems: Record<string, { id: string; label: string; icon: string }[]> = {
+    packaging_prn: [
+      { id: 'prn', label: t.nav.prn, icon: 'certificate' },
+      { id: 'coa', label: t.nav.coa, icon: 'document' },
+    ],
+    tire_epo: [
+      { id: 'certificates', label: 'Certificats Exutoire', icon: 'trophy' },
+    ],
+    chemical_recycling: [
+      { id: 'massbalance', label: t.nav.massBalance, icon: 'scale' },
+      { id: 'certificates', label: 'ISCC+ Declarations', icon: 'trophy' },
+    ],
+    weee_collection: [
+      { id: 'certificates', label: 'EAR Reports', icon: 'reports' },
+    ],
+    plastics_mechanical: [
+      { id: 'certificates', label: t.nav.certificates, icon: 'trophy' },
+    ],
+  };
+
+  // Common items for all industries (after industry-specific)
+  const commonEndNavItems = [
     { id: 'errors', label: t.nav.errors, icon: 'alertTriangle' },
-    { id: 'certificates', label: t.nav.certificates, icon: 'trophy' },
-    { id: 'massbalance', label: t.nav.massBalance, icon: 'scale' },
     { id: 'reports', label: t.nav.reports, icon: 'reports' },
+  ];
+
+  // Build complete nav items based on industry
+  const navItems = [
+    ...baseNavItems,
+    ...(industrySpecificNavItems[industry.id] || []),
+    ...commonEndNavItems,
   ];
   
   return (
@@ -3726,23 +3753,59 @@ const Header: FC<{ industry: Industry; persona: Persona; onMenuClick: () => void
 // INDUSTRY SELECTOR (Demo)
 // ============================================================================
 
-const IndustrySelector: FC<{ selected: IndustryId; onChange: (id: IndustryId) => void }> = ({ selected, onChange }) => (
-  <div style={{ position: 'fixed', bottom: '20px', right: '20px', background: tokens.colors.cream[100], borderRadius: tokens.radius.xl, padding: '16px', boxShadow: tokens.shadow.lg, zIndex: 200, border: `1px solid ${tokens.colors.cream[400]}` }}>
-    <div style={{ fontSize: '11px', fontWeight: 600, color: tokens.colors.text.muted, marginBottom: '10px', textTransform: 'uppercase' }}>Demo: Switch Industry</div>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      {Object.values(industries).map(ind => (
-        <button key={ind.id} onClick={() => onChange(ind.id)} style={{
-          display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', border: 'none', borderRadius: tokens.radius.md, cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: 500,
-          background: selected === ind.id ? ind.color : tokens.colors.cream[300],
-          color: selected === ind.id ? '#FFF' : tokens.colors.text.secondary,
-        }}>
-          <Icon name={ind.icon} size={16} color={selected === ind.id ? '#FFF' : tokens.colors.text.muted} />
-          <span>{ind.name}</span>
+const IndustrySelector: FC<{ selected: IndustryId; onChange: (id: IndustryId) => void }> = ({ selected, onChange }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const selectedIndustry = industries[selected];
+
+  return (
+    <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 200 }}>
+      {/* Collapsed state - small button */}
+      {!isExpanded && (
+        <button
+          onClick={() => setIsExpanded(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '10px 14px', border: 'none', borderRadius: tokens.radius.lg,
+            background: selectedIndustry.color, color: '#FFF',
+            cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: 600,
+            boxShadow: tokens.shadow.lg,
+          }}
+        >
+          <Icon name={selectedIndustry.icon} size={16} color="#FFF" />
+          <span>Demo</span>
+          <Icon name="chevronUp" size={14} color="#FFF" />
         </button>
-      ))}
+      )}
+
+      {/* Expanded state - full selector */}
+      {isExpanded && (
+        <div style={{ background: tokens.colors.cream[100], borderRadius: tokens.radius.xl, padding: '16px', boxShadow: tokens.shadow.lg, border: `1px solid ${tokens.colors.cream[400]}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: tokens.colors.text.muted, textTransform: 'uppercase' }}>Demo: Switch Industry</div>
+            <button
+              onClick={() => setIsExpanded(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+            >
+              <Icon name="chevronDown" size={14} color={tokens.colors.text.muted} />
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {Object.values(industries).map(ind => (
+              <button key={ind.id} onClick={() => { onChange(ind.id); setIsExpanded(false); }} style={{
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', border: 'none', borderRadius: tokens.radius.md, cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: 500,
+                background: selected === ind.id ? ind.color : tokens.colors.cream[300],
+                color: selected === ind.id ? '#FFF' : tokens.colors.text.secondary,
+              }}>
+                <Icon name={ind.icon} size={16} color={selected === ind.id ? '#FFF' : tokens.colors.text.muted} />
+                <span>{ind.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+};
 
 // ============================================================================
 // MAIN APP
@@ -3766,7 +3829,7 @@ const App: FC = () => {
     // Chemical recycling
     massBalanceAccuracy: 99.1, pyoilOutput: 38.4, feedstockVerified: 94.5, wasteRate: 13.2,
     // Packaging PRN
-    prnCoverage: 92, coaErrorRate: 9, yield: 87.5, infeedMapped: 78,
+    prnCoverage: 92, coaErrorRate: 8.8, yield: 87.5, infeedMapped: 78,
     // Fridge WEEE take-back
     unitsCollected: 3521, recycledWeight: 87.5, verificationRate: 98.2, manufacturerTally: 1250,
     // Plastics
