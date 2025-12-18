@@ -558,7 +558,7 @@ const useLanguage = () => useContext(LanguageContext);
 type IndustryId = 'tire_epo' | 'chemical_recycling' | 'packaging_prn' | 'weee_collection' | 'plastics_mechanical';
 type PersonaId = 'compliance_officer' | 'operations_manager' | 'site_operator';
 type DocumentStatus = 'verified' | 'pending' | 'flagged' | 'missing';
-type ProcessStep = 'collection' | 'reception' | 'processing' | 'output' | 'certification';
+type ProcessStep = 'collection' | 'reception' | 'processing' | 'output' | 'certification' | 'coa_verification' | 'prn_management';
 type EvidenceType = 'document' | 'photo' | 'iot_data' | 'manual_entry' | 'signature' | 'geolocation';
 type VerificationRule = 'required' | 'numeric_range' | 'date_valid' | 'regex_match' | 'cross_reference' | 'threshold';
 
@@ -925,7 +925,8 @@ const industries: Record<IndustryId, Industry> = {
       { id: 'reception', label: 'Weighbridge', icon: 'weighScale' },
       { id: 'processing', label: 'Processing', icon: 'factory' },
       { id: 'output', label: 'Output & QC', icon: 'qualityCheck' },
-      { id: 'certification', label: 'COA & PRN', icon: 'certificate' },
+      { id: 'coa_verification', label: 'COA Verification', icon: 'document' },
+      { id: 'prn_management', label: 'PRN Management', icon: 'certificate' },
     ],
     documentTypes: ['Weighbridge Ticket', 'Delivery Note', 'Process Log', 'Certificate of Analysis', 'PRN Evidence'],
   },
@@ -1436,8 +1437,9 @@ const defaultProcessConfigurations: Record<IndustryId, ProcessConfiguration> = {
       { id: 'collection', label: 'Material Reception', icon: 'intake', description: 'Réception matières', predecessors: [], outputs: ['Matière entrante'], estimatedDuration: '30min', responsibleRole: 'Opérateur', evidenceRequirements: [] },
       { id: 'reception', label: 'Weighbridge', icon: 'weighScale', description: 'Pesée pont-bascule', predecessors: ['collection'], outputs: ['Ticket pesée'], estimatedDuration: '10min', responsibleRole: 'Opérateur', evidenceRequirements: [] },
       { id: 'processing', label: 'Processing', icon: 'factory', description: 'Traitement/recyclage', predecessors: ['reception'], outputs: ['Matière recyclée'], estimatedDuration: '4h', responsibleRole: 'Opérateur', evidenceRequirements: [] },
-      { id: 'output', label: 'Output & QC', icon: 'qualityCheck', description: 'Sortie et contrôle qualité', predecessors: ['processing'], outputs: ['COA'], estimatedDuration: '1h', responsibleRole: 'Labo', evidenceRequirements: [] },
-      { id: 'certification', label: 'COA & PRN', icon: 'certificate', description: 'Certificat et PRN', predecessors: ['output'], outputs: ['PRN'], estimatedDuration: '1 jour', responsibleRole: 'Admin', evidenceRequirements: [] },
+      { id: 'output', label: 'Output & QC', icon: 'qualityCheck', description: 'Sortie et contrôle qualité', predecessors: ['processing'], outputs: ['Batch produit'], estimatedDuration: '1h', responsibleRole: 'Labo', evidenceRequirements: [] },
+      { id: 'coa_verification', label: 'COA Verification', icon: 'document', description: 'Vérification et validation des Certificats d\'Analyse', predecessors: ['output'], outputs: ['COA validé'], estimatedDuration: '2h', responsibleRole: 'Qualité', evidenceRequirements: [] },
+      { id: 'prn_management', label: 'PRN Management', icon: 'certificate', description: 'Gestion et émission des Packaging Recovery Notes', predecessors: ['coa_verification'], outputs: ['PRN émis'], estimatedDuration: '1 jour', responsibleRole: 'Admin', evidenceRequirements: [] },
     ],
   },
   
@@ -2493,14 +2495,27 @@ const StepConfigurationModal: FC<{
 // PROCESS FLOW EDITOR - Visual workflow with double-click configuration
 // ============================================================================
 
-const ProcessFlowEditor: FC<{ industry: Industry }> = ({ industry }) => {
+const ProcessFlowEditor: FC<{ industry: Industry; onNavigate?: (tab: string) => void }> = ({ industry, onNavigate }) => {
   const [processConfig, setProcessConfig] = useState<ProcessConfiguration>(
     defaultProcessConfigurations[industry.id]
   );
   const [selectedStep, setSelectedStep] = useState<ProcessStepConfig | null>(null);
-  
+
+  // Map process step IDs to navigation tabs
+  const stepNavigation: Record<string, string> = {
+    'coa_verification': 'coa',
+    'prn_management': 'prn',
+  };
+
   const handleStepDoubleClick = (step: ProcessStepConfig) => {
     setSelectedStep(step);
+  };
+
+  const handleStepClick = (step: ProcessStepConfig) => {
+    const navTarget = stepNavigation[step.id];
+    if (navTarget && onNavigate) {
+      onNavigate(navTarget);
+    }
   };
   
   const handleStepSave = (updatedStep: ProcessStepConfig) => {
@@ -2565,20 +2580,24 @@ const ProcessFlowEditor: FC<{ industry: Industry }> = ({ industry }) => {
           const totalCriteria = getTotalCriteria(step);
           const isConfigured = totalEvidence > 0;
           
+          const isNavigable = !!stepNavigation[step.id];
+
           return (
             <React.Fragment key={step.id}>
               <div
+                onClick={() => handleStepClick(step)}
                 onDoubleClick={() => handleStepDoubleClick(step)}
                 style={{
                   flex: '1',
                   minWidth: '180px',
-                  background: isConfigured ? tokens.colors.cream[50] : tokens.colors.cream[300],
+                  background: isNavigable ? `${industry.color}10` : (isConfigured ? tokens.colors.cream[50] : tokens.colors.cream[300]),
                   borderRadius: tokens.radius.lg,
                   padding: '20px 16px',
-                  border: `2px solid ${isConfigured ? industry.color : tokens.colors.cream[400]}`,
+                  border: `2px solid ${isNavigable ? industry.color : (isConfigured ? industry.color : tokens.colors.cream[400])}`,
                   cursor: 'pointer',
                   transition: 'all 200ms ease',
                   position: 'relative',
+                  boxShadow: isNavigable ? `0 2px 8px ${industry.color}30` : 'none',
                 }}
               >
                 {/* Step Header */}
@@ -2672,16 +2691,28 @@ const ProcessFlowEditor: FC<{ industry: Industry }> = ({ industry }) => {
                   </div>
                 )}
                 
-                {/* Edit indicator */}
-                <div style={{
-                  position: 'absolute', top: '8px', right: '8px',
-                  background: 'rgba(255,255,255,0.9)', borderRadius: tokens.radius.sm,
-                  padding: '4px 8px', fontSize: '10px', color: tokens.colors.text.muted,
-                  display: 'flex', alignItems: 'center', gap: '4px',
-                  opacity: 0.7,
-                }}>
-                  <Icon name="edit" size={10} /> Double-clic
-                </div>
+                {/* Edit indicator or Navigation indicator */}
+                {isNavigable ? (
+                  <div style={{
+                    position: 'absolute', top: '8px', right: '8px',
+                    background: industry.color, borderRadius: tokens.radius.sm,
+                    padding: '4px 10px', fontSize: '10px', color: 'white',
+                    display: 'flex', alignItems: 'center', gap: '4px',
+                    fontWeight: 600,
+                  }}>
+                    <Icon name="arrowRight" size={10} color="white" /> Voir détails
+                  </div>
+                ) : (
+                  <div style={{
+                    position: 'absolute', top: '8px', right: '8px',
+                    background: 'rgba(255,255,255,0.9)', borderRadius: tokens.radius.sm,
+                    padding: '4px 8px', fontSize: '10px', color: tokens.colors.text.muted,
+                    display: 'flex', alignItems: 'center', gap: '4px',
+                    opacity: 0.7,
+                  }}>
+                    <Icon name="edit" size={10} /> Double-clic
+                  </div>
+                )}
               </div>
               
               {/* Arrow between steps */}
@@ -2871,8 +2902,32 @@ const PRNManagementView: FC<{ industry: Industry }> = ({ industry }) => {
 // COA VERIFICATION VIEW
 // ============================================================================
 
+interface COATestResult {
+  parameter: string;
+  specification: string;
+  result: string;
+  unit: string;
+  passed: boolean;
+}
+
+interface COADocument {
+  id: string;
+  batch: string;
+  supplier: string;
+  supplierEmail: string;
+  supplierContact: string;
+  material: string;
+  received: string;
+  tests: number;
+  passed: number;
+  status: DocumentStatus;
+  testResults: COATestResult[];
+}
+
 const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const [selectedCOA, setSelectedCOA] = useState<COADocument | null>(null);
+  const [showFailedOnly, setShowFailedOnly] = useState(false);
 
   // COA Verification Steps
   const verificationSteps = [
@@ -2885,14 +2940,86 @@ const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
     { id: 7, key: 'authorization', icon: 'certificate', status: 'flagged' as const },
   ];
 
-  // Mock COA data
-  const coaData = [
-    { id: 'COA-2024-0891', batch: 'BATCH-PET-2024-156', supplier: 'Veolia UK', material: 'rPET Flakes', received: '2024-12-15', tests: 8, passed: 8, status: 'verified' as const },
-    { id: 'COA-2024-0892', batch: 'BATCH-HDPE-2024-089', supplier: 'SUEZ Recycling', material: 'HDPE Pellets', received: '2024-12-14', tests: 6, passed: 5, status: 'flagged' as const },
-    { id: 'COA-2024-0893', batch: 'BATCH-PP-2024-234', supplier: 'Biffa', material: 'PP Regranulate', received: '2024-12-13', tests: 7, passed: 7, status: 'verified' as const },
-    { id: 'COA-2024-0894', batch: 'BATCH-PET-2024-157', supplier: 'Veolia UK', material: 'rPET Flakes', received: '2024-12-12', tests: 8, passed: 6, status: 'flagged' as const },
-    { id: 'COA-2024-0895', batch: 'BATCH-LDPE-2024-045', supplier: 'FCC Environment', material: 'LDPE Film', received: '2024-12-11', tests: 5, passed: 5, status: 'verified' as const },
-    { id: 'COA-2024-0896', batch: 'BATCH-PET-2024-158', supplier: 'Viridor', material: 'rPET Flakes', received: '2024-12-10', tests: 8, passed: 0, status: 'pending' as const },
+  // Mock COA data with detailed test results
+  const coaData: COADocument[] = [
+    {
+      id: 'COA-2024-0891', batch: 'BATCH-PET-2024-156', supplier: 'Veolia UK', supplierEmail: 'quality@veolia.co.uk', supplierContact: 'John Smith',
+      material: 'rPET Flakes', received: '2024-12-15', tests: 8, passed: 8, status: 'verified',
+      testResults: [
+        { parameter: 'Intrinsic Viscosity', specification: '0.75-0.85 dL/g', result: '0.79', unit: 'dL/g', passed: true },
+        { parameter: 'Moisture Content', specification: '< 0.5%', result: '0.3', unit: '%', passed: true },
+        { parameter: 'Color (L*)', specification: '> 60', result: '65', unit: '', passed: true },
+        { parameter: 'Melting Point', specification: '250-260°C', result: '255', unit: '°C', passed: true },
+        { parameter: 'Contamination Level', specification: '< 50 ppm', result: '35', unit: 'ppm', passed: true },
+        { parameter: 'PVC Content', specification: '< 10 ppm', result: '5', unit: 'ppm', passed: true },
+        { parameter: 'Metal Content', specification: '< 20 ppm', result: '12', unit: 'ppm', passed: true },
+        { parameter: 'Bulk Density', specification: '0.35-0.45 g/cm³', result: '0.40', unit: 'g/cm³', passed: true },
+      ]
+    },
+    {
+      id: 'COA-2024-0892', batch: 'BATCH-HDPE-2024-089', supplier: 'SUEZ Recycling', supplierEmail: 'compliance@suez.com', supplierContact: 'Marie Dupont',
+      material: 'HDPE Pellets', received: '2024-12-14', tests: 6, passed: 5, status: 'flagged',
+      testResults: [
+        { parameter: 'Melt Flow Index', specification: '0.3-0.5 g/10min', result: '0.42', unit: 'g/10min', passed: true },
+        { parameter: 'Density', specification: '0.952-0.965 g/cm³', result: '0.958', unit: 'g/cm³', passed: true },
+        { parameter: 'Moisture Content', specification: '< 0.1%', result: '0.15', unit: '%', passed: false },
+        { parameter: 'Ash Content', specification: '< 0.5%', result: '0.3', unit: '%', passed: true },
+        { parameter: 'Color (b*)', specification: '< 5', result: '3.2', unit: '', passed: true },
+        { parameter: 'Tensile Strength', specification: '> 25 MPa', result: '28', unit: 'MPa', passed: true },
+      ]
+    },
+    {
+      id: 'COA-2024-0893', batch: 'BATCH-PP-2024-234', supplier: 'Biffa', supplierEmail: 'lab@biffa.co.uk', supplierContact: 'James Wilson',
+      material: 'PP Regranulate', received: '2024-12-13', tests: 7, passed: 7, status: 'verified',
+      testResults: [
+        { parameter: 'Melt Flow Rate', specification: '10-15 g/10min', result: '12', unit: 'g/10min', passed: true },
+        { parameter: 'Density', specification: '0.90-0.91 g/cm³', result: '0.905', unit: 'g/cm³', passed: true },
+        { parameter: 'Moisture Content', specification: '< 0.1%', result: '0.05', unit: '%', passed: true },
+        { parameter: 'Ash Content', specification: '< 1%', result: '0.6', unit: '%', passed: true },
+        { parameter: 'Odor Test', specification: 'Pass', result: 'Pass', unit: '', passed: true },
+        { parameter: 'Flexural Modulus', specification: '> 1200 MPa', result: '1350', unit: 'MPa', passed: true },
+        { parameter: 'Impact Strength', specification: '> 3 kJ/m²', result: '4.2', unit: 'kJ/m²', passed: true },
+      ]
+    },
+    {
+      id: 'COA-2024-0894', batch: 'BATCH-PET-2024-157', supplier: 'Veolia UK', supplierEmail: 'quality@veolia.co.uk', supplierContact: 'John Smith',
+      material: 'rPET Flakes', received: '2024-12-12', tests: 8, passed: 6, status: 'flagged',
+      testResults: [
+        { parameter: 'Intrinsic Viscosity', specification: '0.75-0.85 dL/g', result: '0.72', unit: 'dL/g', passed: false },
+        { parameter: 'Moisture Content', specification: '< 0.5%', result: '0.4', unit: '%', passed: true },
+        { parameter: 'Color (L*)', specification: '> 60', result: '58', unit: '', passed: false },
+        { parameter: 'Melting Point', specification: '250-260°C', result: '253', unit: '°C', passed: true },
+        { parameter: 'Contamination Level', specification: '< 50 ppm', result: '42', unit: 'ppm', passed: true },
+        { parameter: 'PVC Content', specification: '< 10 ppm', result: '8', unit: 'ppm', passed: true },
+        { parameter: 'Metal Content', specification: '< 20 ppm', result: '15', unit: 'ppm', passed: true },
+        { parameter: 'Bulk Density', specification: '0.35-0.45 g/cm³', result: '0.38', unit: 'g/cm³', passed: true },
+      ]
+    },
+    {
+      id: 'COA-2024-0895', batch: 'BATCH-LDPE-2024-045', supplier: 'FCC Environment', supplierEmail: 'qa@fccenvironment.co.uk', supplierContact: 'Sarah Brown',
+      material: 'LDPE Film', received: '2024-12-11', tests: 5, passed: 5, status: 'verified',
+      testResults: [
+        { parameter: 'Melt Flow Index', specification: '1.5-2.5 g/10min', result: '2.0', unit: 'g/10min', passed: true },
+        { parameter: 'Density', specification: '0.918-0.923 g/cm³', result: '0.920', unit: 'g/cm³', passed: true },
+        { parameter: 'Moisture Content', specification: '< 0.1%', result: '0.08', unit: '%', passed: true },
+        { parameter: 'Dart Impact', specification: '> 120 g', result: '145', unit: 'g', passed: true },
+        { parameter: 'Haze', specification: '< 15%', result: '12', unit: '%', passed: true },
+      ]
+    },
+    {
+      id: 'COA-2024-0896', batch: 'BATCH-PET-2024-158', supplier: 'Viridor', supplierEmail: 'quality.control@viridor.co.uk', supplierContact: 'Emma Taylor',
+      material: 'rPET Flakes', received: '2024-12-10', tests: 8, passed: 0, status: 'pending',
+      testResults: [
+        { parameter: 'Intrinsic Viscosity', specification: '0.75-0.85 dL/g', result: 'Pending', unit: 'dL/g', passed: false },
+        { parameter: 'Moisture Content', specification: '< 0.5%', result: 'Pending', unit: '%', passed: false },
+        { parameter: 'Color (L*)', specification: '> 60', result: 'Pending', unit: '', passed: false },
+        { parameter: 'Melting Point', specification: '250-260°C', result: 'Pending', unit: '°C', passed: false },
+        { parameter: 'Contamination Level', specification: '< 50 ppm', result: 'Pending', unit: 'ppm', passed: false },
+        { parameter: 'PVC Content', specification: '< 10 ppm', result: 'Pending', unit: 'ppm', passed: false },
+        { parameter: 'Metal Content', specification: '< 20 ppm', result: 'Pending', unit: 'ppm', passed: false },
+        { parameter: 'Bulk Density', specification: '0.35-0.45 g/cm³', result: 'Pending', unit: 'g/cm³', passed: false },
+      ]
+    },
   ];
 
   const totalCOAs = coaData.length;
@@ -2900,7 +3027,77 @@ const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
   const flaggedCOAs = coaData.filter(c => c.status === 'flagged').length;
   const totalTests = coaData.reduce((sum, c) => sum + c.tests, 0);
   const passedTests = coaData.reduce((sum, c) => sum + c.passed, 0);
+  const failedTests = totalTests - passedTests;
   const errorRate = (((totalTests - passedTests) / totalTests) * 100).toFixed(1);
+
+  // Get all failed tests across all COAs
+  const allFailedTests = coaData.flatMap(coa =>
+    coa.testResults.filter(t => !t.passed && t.result !== 'Pending').map(test => ({
+      ...test,
+      coaId: coa.id,
+      batch: coa.batch,
+      supplier: coa.supplier,
+      supplierEmail: coa.supplierEmail,
+      supplierContact: coa.supplierContact,
+      material: coa.material,
+    }))
+  );
+
+  // Generate email content
+  const generateEmailContent = (coa: COADocument, failedTest?: COATestResult) => {
+    const subject = encodeURIComponent(
+      lang === 'fr'
+        ? `[Action requise] Clarification COA ${coa.id} - ${coa.batch}`
+        : `[Action Required] COA Clarification ${coa.id} - ${coa.batch}`
+    );
+
+    const failedTestsList = coa.testResults.filter(t => !t.passed && t.result !== 'Pending');
+    const failedTestsText = failedTestsList.map(t =>
+      `- ${t.parameter}: ${t.result} ${t.unit} (${lang === 'fr' ? 'Spec' : 'Spec'}: ${t.specification})`
+    ).join('%0A');
+
+    const body = encodeURIComponent(
+      lang === 'fr'
+        ? `Bonjour ${coa.supplierContact},
+
+Nous avons identifié des non-conformités dans le Certificat d'Analyse ${coa.id} pour le lot ${coa.batch} (${coa.material}).
+
+Tests non conformes:
+${decodeURIComponent(failedTestsText)}
+
+Pourriez-vous nous fournir des informations complémentaires concernant ces écarts ?
+
+Actions demandées:
+1. Confirmer les valeurs mesurées
+2. Expliquer les causes possibles de l'écart
+3. Proposer des actions correctives si nécessaire
+
+Merci de votre retour rapide.
+
+Cordialement,
+Équipe Qualité eco₂Veritas`
+        : `Dear ${coa.supplierContact},
+
+We have identified non-conformities in Certificate of Analysis ${coa.id} for batch ${coa.batch} (${coa.material}).
+
+Failed tests:
+${decodeURIComponent(failedTestsText)}
+
+Could you please provide additional information regarding these discrepancies?
+
+Actions requested:
+1. Confirm the measured values
+2. Explain possible causes of the deviation
+3. Propose corrective actions if necessary
+
+Thank you for your prompt response.
+
+Best regards,
+eco₂Veritas Quality Team`
+    );
+
+    return `mailto:${coa.supplierEmail}?subject=${subject}&body=${body}`;
+  };
 
   return (
     <div>
@@ -2927,9 +3124,23 @@ const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
             <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.status.verified}</div>
             <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.success.main }}>{verifiedCOAs}</div>
           </div>
-          <div style={{ background: tokens.colors.action.light, borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center' }}>
+          <div
+            onClick={() => setShowFailedOnly(!showFailedOnly)}
+            style={{
+              background: tokens.colors.action.light,
+              borderRadius: tokens.radius.md,
+              padding: '16px',
+              textAlign: 'center',
+              cursor: 'pointer',
+              border: showFailedOnly ? `2px solid ${tokens.colors.action.main}` : '2px solid transparent',
+              transition: 'all 150ms ease',
+            }}
+          >
             <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.coa.failedTests}</div>
             <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.action.main }}>{flaggedCOAs}</div>
+            <div style={{ fontSize: '10px', color: tokens.colors.action.main, marginTop: '4px', fontWeight: 600 }}>
+              {showFailedOnly ? (lang === 'fr' ? '✓ Filtre actif' : '✓ Filter active') : (lang === 'fr' ? 'Cliquer pour filtrer' : 'Click to filter')}
+            </div>
           </div>
           <div style={{ background: tokens.colors.success.light, borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center' }}>
             <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.coa.passedTests}</div>
@@ -2941,6 +3152,72 @@ const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
           </div>
         </div>
       </Card>
+
+      {/* Failed Tests Detail Panel - Shown when filter is active */}
+      {showFailedOnly && allFailedTests.length > 0 && (
+        <Card style={{ marginBottom: '20px', borderLeft: `4px solid ${tokens.colors.action.main}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: tokens.colors.action.main, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Icon name="alertTriangle" size={20} color={tokens.colors.action.main} />
+              {lang === 'fr' ? 'Tests échoués nécessitant une action' : 'Failed Tests Requiring Action'} ({allFailedTests.length})
+            </h3>
+            <button onClick={() => setShowFailedOnly(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+              <Icon name="xCircle" size={20} color={tokens.colors.text.muted} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {allFailedTests.map((test, i) => (
+              <div key={i} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '14px',
+                background: tokens.colors.cream[100],
+                borderRadius: tokens.radius.md,
+                border: `1px solid ${tokens.colors.cream[400]}`,
+              }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: tokens.radius.md, background: tokens.colors.action.light, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon name="xCircle" size={20} color={tokens.colors.action.main} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 700, color: tokens.colors.text.primary }}>{test.parameter}</span>
+                    <Badge variant="action">{test.coaId}</Badge>
+                  </div>
+                  <div style={{ fontSize: '12px', color: tokens.colors.text.secondary, marginBottom: '4px' }}>
+                    <strong>{lang === 'fr' ? 'Résultat' : 'Result'}:</strong> <span style={{ color: tokens.colors.action.main, fontWeight: 600 }}>{test.result} {test.unit}</span>
+                    <span style={{ margin: '0 8px' }}>|</span>
+                    <strong>Spec:</strong> {test.specification}
+                  </div>
+                  <div style={{ fontSize: '11px', color: tokens.colors.text.muted }}>
+                    {test.material} • {test.batch} • {test.supplier}
+                  </div>
+                </div>
+                <a
+                  href={generateEmailContent(coaData.find(c => c.id === test.coaId)!, test)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    background: tokens.colors.brand[600],
+                    color: '#FFF',
+                    borderRadius: tokens.radius.md,
+                    textDecoration: 'none',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon name="document" size={14} color="#FFF" />
+                  {lang === 'fr' ? 'Contacter' : 'Contact'}
+                </a>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Verification Process */}
       <Card style={{ marginBottom: '20px' }}>
@@ -2969,9 +3246,11 @@ const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
 
       {/* COA Table */}
       <Card>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.text.secondary, marginBottom: '16px', textTransform: 'uppercase' }}>Recent COA Documents</h3>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.text.secondary, marginBottom: '16px', textTransform: 'uppercase' }}>
+          {showFailedOnly ? (lang === 'fr' ? 'COAs avec tests échoués' : 'COAs with Failed Tests') : (lang === 'fr' ? 'Documents COA récents' : 'Recent COA Documents')}
+        </h3>
         <div style={{ background: tokens.colors.cream[100], borderRadius: tokens.radius.md, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '130px 160px 1fr 120px 100px 100px 100px 80px', padding: '10px 14px', background: tokens.colors.cream[300], fontSize: '11px', fontWeight: 600, color: tokens.colors.text.secondary }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '130px 160px 1fr 120px 100px 100px 100px 100px', padding: '10px 14px', background: tokens.colors.cream[300], fontSize: '11px', fontWeight: 600, color: tokens.colors.text.secondary }}>
             <div>COA ID</div>
             <div>{t.coa.batchNumber}</div>
             <div>Supplier</div>
@@ -2981,8 +3260,24 @@ const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
             <div style={{ textAlign: 'center' }}>{t.coa.result}</div>
             <div style={{ textAlign: 'center' }}>{t.common.status}</div>
           </div>
-          {coaData.map((coa, i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: '130px 160px 1fr 120px 100px 100px 100px 80px', padding: '12px 14px', borderBottom: i < coaData.length - 1 ? `1px solid ${tokens.colors.cream[300]}` : 'none', fontSize: '13px', alignItems: 'center' }}>
+          {coaData
+            .filter(coa => !showFailedOnly || coa.status === 'flagged')
+            .map((coa, i) => (
+            <div
+              key={i}
+              onClick={() => setSelectedCOA(coa)}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '130px 160px 1fr 120px 100px 100px 100px 100px',
+                padding: '12px 14px',
+                borderBottom: `1px solid ${tokens.colors.cream[300]}`,
+                fontSize: '13px',
+                alignItems: 'center',
+                cursor: 'pointer',
+                transition: 'background 150ms ease',
+                background: coa.status === 'flagged' ? tokens.colors.action.light + '30' : 'transparent',
+              }}
+            >
               <div style={{ fontFamily: 'monospace', fontSize: '11px', color: tokens.colors.brand[600], fontWeight: 600 }}>{coa.id}</div>
               <div style={{ fontFamily: 'monospace', fontSize: '11px', color: tokens.colors.text.muted }}>{coa.batch}</div>
               <div style={{ fontWeight: 500, color: tokens.colors.text.primary }}>{coa.supplier}</div>
@@ -3002,6 +3297,139 @@ const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
           ))}
         </div>
       </Card>
+
+      {/* COA Detail Modal */}
+      {selectedCOA && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(10,22,40,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000,
+        }} onClick={() => setSelectedCOA(null)}>
+          <div style={{
+            background: tokens.colors.cream[50],
+            borderRadius: tokens.radius.xl,
+            width: '90%',
+            maxWidth: '800px',
+            maxHeight: '90vh',
+            overflow: 'auto',
+          }} onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '20px 24px',
+              borderBottom: `1px solid ${tokens.colors.cream[400]}`,
+              background: selectedCOA.status === 'flagged' ? tokens.colors.action.light : tokens.colors.success.light,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: 700, color: tokens.colors.text.primary, margin: 0 }}>
+                      {selectedCOA.id}
+                    </h2>
+                    <StatusBadge status={selectedCOA.status} />
+                  </div>
+                  <div style={{ fontSize: '13px', color: tokens.colors.text.secondary }}>
+                    {selectedCOA.batch} • {selectedCOA.material} • {selectedCOA.supplier}
+                  </div>
+                </div>
+                <button onClick={() => setSelectedCOA(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+                  <Icon name="xCircle" size={24} color={tokens.colors.text.secondary} />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ padding: '24px' }}>
+              {/* Test Summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '24px' }}>
+                <div style={{ background: tokens.colors.cream[200], borderRadius: tokens.radius.md, padding: '14px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '4px' }}>Total Tests</div>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: tokens.colors.text.primary }}>{selectedCOA.tests}</div>
+                </div>
+                <div style={{ background: tokens.colors.success.light, borderRadius: tokens.radius.md, padding: '14px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '4px' }}>{t.coa.passedTests}</div>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: tokens.colors.success.main }}>{selectedCOA.passed}</div>
+                </div>
+                <div style={{ background: tokens.colors.action.light, borderRadius: tokens.radius.md, padding: '14px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '4px' }}>{t.coa.failedTests}</div>
+                  <div style={{ fontSize: '20px', fontWeight: 700, color: tokens.colors.action.main }}>{selectedCOA.tests - selectedCOA.passed}</div>
+                </div>
+              </div>
+
+              {/* Test Results Table */}
+              <h4 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.text.secondary, marginBottom: '12px', textTransform: 'uppercase' }}>
+                {lang === 'fr' ? 'Résultats des tests' : 'Test Results'}
+              </h4>
+              <div style={{ background: tokens.colors.cream[100], borderRadius: tokens.radius.md, overflow: 'hidden', marginBottom: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px 120px 80px', padding: '10px 14px', background: tokens.colors.cream[300], fontSize: '11px', fontWeight: 600, color: tokens.colors.text.secondary }}>
+                  <div>{t.coa.testParameter}</div>
+                  <div>{t.coa.specification}</div>
+                  <div>{t.coa.result}</div>
+                  <div style={{ textAlign: 'center' }}>{t.common.status}</div>
+                </div>
+                {selectedCOA.testResults.map((test, i) => (
+                  <div key={i} style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 150px 120px 80px',
+                    padding: '12px 14px',
+                    borderBottom: i < selectedCOA.testResults.length - 1 ? `1px solid ${tokens.colors.cream[300]}` : 'none',
+                    background: !test.passed ? tokens.colors.action.light + '30' : 'transparent',
+                  }}>
+                    <div style={{ fontWeight: 500, color: tokens.colors.text.primary }}>{test.parameter}</div>
+                    <div style={{ color: tokens.colors.text.muted, fontSize: '12px' }}>{test.specification}</div>
+                    <div style={{ fontWeight: 600, color: test.passed ? tokens.colors.success.main : tokens.colors.action.main }}>
+                      {test.result} {test.unit}
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <Icon name={test.passed ? 'checkCircle' : 'xCircle'} size={18} color={test.passed ? tokens.colors.success.main : tokens.colors.action.main} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Supplier Contact Info & Actions */}
+              {selectedCOA.status === 'flagged' && (
+                <div style={{
+                  background: tokens.colors.cream[200],
+                  borderRadius: tokens.radius.md,
+                  padding: '16px',
+                  border: `1px solid ${tokens.colors.cream[400]}`,
+                }}>
+                  <h4 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.text.primary, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Icon name="complianceOfficer" size={18} color={tokens.colors.brand[600]} />
+                    {lang === 'fr' ? 'Contact fournisseur' : 'Supplier Contact'}
+                  </h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.text.primary }}>{selectedCOA.supplierContact}</div>
+                      <div style={{ fontSize: '13px', color: tokens.colors.text.secondary }}>{selectedCOA.supplier}</div>
+                      <div style={{ fontSize: '12px', color: tokens.colors.brand[600] }}>{selectedCOA.supplierEmail}</div>
+                    </div>
+                    <a
+                      href={generateEmailContent(selectedCOA)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '12px 20px',
+                        background: tokens.colors.brand[600],
+                        color: '#FFF',
+                        borderRadius: tokens.radius.md,
+                        textDecoration: 'none',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <Icon name="document" size={18} color="#FFF" />
+                      {lang === 'fr' ? 'Demander des informations' : 'Request Information'}
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -3409,7 +3837,7 @@ const App: FC = () => {
             </>
           )}
 
-          {activeTab === 'processconfig' && <ProcessFlowEditor industry={industry} />}
+          {activeTab === 'processconfig' && <ProcessFlowEditor industry={industry} onNavigate={setActiveTab} />}
           {activeTab === 'flows' && <MaterialFlowsTable industry={industry} flows={mockData.flows} />}
           {activeTab === 'documents' && <DocumentProcessingView industry={industry} flows={mockData.flows} />}
           {activeTab === 'prn' && <PRNManagementView industry={industry} />}
