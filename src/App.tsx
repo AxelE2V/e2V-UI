@@ -2492,279 +2492,299 @@ const StepConfigurationModal: FC<{
 };
 
 // ============================================================================
-// PROCESS FLOW EDITOR - Visual workflow with double-click configuration
+// PROCESS FLOW EDITOR - Multi-process visual workflow configuration
 // ============================================================================
 
+// Industry-specific process definitions
+interface ProcessDefinition {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  navTab?: string;
+  steps: { id: string; label: string; icon: string; description: string; status: 'verified' | 'pending' | 'flagged' }[];
+}
+
+const getIndustryProcesses = (industryId: string): ProcessDefinition[] => {
+  const processes: Record<string, ProcessDefinition[]> = {
+    packaging_prn: [
+      {
+        id: 'prn_process',
+        name: 'PRN Management Process',
+        description: 'Packaging Recovery Note acquisition and compliance reporting',
+        icon: 'certificate',
+        color: '#2B6CB0',
+        navTab: 'prn',
+        steps: [
+          { id: 'registration', label: 'NPWD Registration', icon: 'document', description: 'Register with National Packaging Waste Database', status: 'verified' },
+          { id: 'dataCollection', label: 'Data Collection', icon: 'reports', description: 'Collect packaging tonnage data', status: 'verified' },
+          { id: 'obligationCalc', label: 'Obligation Calculation', icon: 'scale', description: 'Calculate recycling obligations by material', status: 'verified' },
+          { id: 'acquisition', label: 'PRN Acquisition', icon: 'certificate', description: 'Purchase PRN/PERN from accredited reprocessors', status: 'pending' },
+          { id: 'verification', label: 'Verification', icon: 'checkCircle', description: 'Verify certificates against NPWD records', status: 'pending' },
+          { id: 'compliance', label: 'Compliance Report', icon: 'trophy', description: 'Submit annual compliance report to EA', status: 'flagged' },
+        ],
+      },
+      {
+        id: 'coa_process',
+        name: 'COA Verification Process',
+        description: 'Certificate of Analysis verification workflow',
+        icon: 'document',
+        color: '#38A169',
+        navTab: 'coa',
+        steps: [
+          { id: 'supplierQualification', label: 'Supplier Qualification', icon: 'complianceOfficer', description: 'Verify supplier is approved', status: 'verified' },
+          { id: 'documentReception', label: 'Document Reception', icon: 'document', description: 'Receive COA with shipment', status: 'verified' },
+          { id: 'productIdentification', label: 'Product Identification', icon: 'search', description: 'Match COA to batch/lot', status: 'verified' },
+          { id: 'batchTracking', label: 'Batch Tracking', icon: 'flows', description: 'Link to internal batch records', status: 'verified' },
+          { id: 'testResultsReview', label: 'Test Results Review', icon: 'reports', description: 'Review all test parameters', status: 'pending' },
+          { id: 'specificationCheck', label: 'Specification Check', icon: 'checkCircle', description: 'Verify against material specs', status: 'pending' },
+          { id: 'authorization', label: 'Authorization', icon: 'certificate', description: 'Approve or reject material', status: 'flagged' },
+        ],
+      },
+    ],
+    tire_epo: [
+      {
+        id: 'tire_collection',
+        name: 'Tire Collection & Valorization',
+        description: 'End-of-life tire collection and recycling process',
+        icon: 'truck',
+        color: '#D69E2E',
+        steps: [
+          { id: 'collection', label: 'Collection', icon: 'truck', description: 'Collect tires from garages/dealers', status: 'verified' },
+          { id: 'weighing', label: 'Weighbridge', icon: 'weighScale', description: 'Weigh incoming load', status: 'verified' },
+          { id: 'sorting', label: 'Sorting', icon: 'sorting', description: 'Sort reuse vs PUNR', status: 'verified' },
+          { id: 'processing', label: 'Processing', icon: 'factory', description: 'Shred or bale tires', status: 'pending' },
+          { id: 'valorization', label: 'Valorization', icon: 'trophy', description: 'Send to cement kiln or granulator', status: 'pending' },
+          { id: 'declaration', label: 'EPR Declaration', icon: 'certificate', description: 'Report to eco-organism', status: 'flagged' },
+        ],
+      },
+    ],
+    chemical_recycling: [
+      {
+        id: 'mass_balance',
+        name: 'Mass Balance Certification',
+        description: 'ISCC+ mass balance tracking process',
+        icon: 'scale',
+        color: '#805AD5',
+        navTab: 'massbalance',
+        steps: [
+          { id: 'feedstock', label: 'Feedstock Intake', icon: 'intake', description: 'Receive certified feedstock', status: 'verified' },
+          { id: 'verification', label: 'Chain of Custody', icon: 'flows', description: 'Verify ISCC+ certification', status: 'verified' },
+          { id: 'processing', label: 'Pyrolysis', icon: 'factory', description: 'Convert to pyrolysis oil', status: 'verified' },
+          { id: 'allocation', label: 'Mass Balance Allocation', icon: 'scale', description: 'Allocate recycled content', status: 'pending' },
+          { id: 'declaration', label: 'ISCC+ Declaration', icon: 'certificate', description: 'Issue sustainability declaration', status: 'flagged' },
+        ],
+      },
+    ],
+    weee_collection: [
+      {
+        id: 'weee_process',
+        name: 'WEEE Take-Back Process',
+        description: 'EAR-compliant appliance take-back',
+        icon: 'refrigerator',
+        color: '#38A169',
+        steps: [
+          { id: 'collection', label: 'Retailer Collection', icon: 'truck', description: 'Collect from retail partners', status: 'verified' },
+          { id: 'transport', label: 'Transport', icon: 'document', description: 'Transport to recycler', status: 'verified' },
+          { id: 'weighing', label: 'Weighbridge', icon: 'weighScale', description: 'Weigh container', status: 'verified' },
+          { id: 'counting', label: 'Manual Count', icon: 'clipboard', description: 'Count units by category', status: 'pending' },
+          { id: 'reporting', label: 'EAR Report', icon: 'reports', description: 'Submit to Stiftung EAR', status: 'flagged' },
+        ],
+      },
+    ],
+    plastics_mechanical: [
+      {
+        id: 'mechanical_recycling',
+        name: 'Mechanical Recycling Process',
+        description: 'rPET/rHDPE production workflow',
+        icon: 'factory',
+        color: '#3182CE',
+        steps: [
+          { id: 'intake', label: 'Bale Intake', icon: 'intake', description: 'Receive sorted bales', status: 'verified' },
+          { id: 'sorting', label: 'AI Sorting', icon: 'robot', description: 'NIR/AI optical sorting', status: 'verified' },
+          { id: 'washing', label: 'Washing', icon: 'washing', description: 'Hot wash and float-sink', status: 'verified' },
+          { id: 'grinding', label: 'Grinding', icon: 'factory', description: 'Produce flakes', status: 'pending' },
+          { id: 'pelletizing', label: 'Pelletizing', icon: 'pellets', description: 'Extrude pellets', status: 'pending' },
+          { id: 'certification', label: 'Customer Cert', icon: 'trophy', description: 'Issue recycled content cert', status: 'flagged' },
+        ],
+      },
+    ],
+  };
+  return processes[industryId] || [];
+};
+
 const ProcessFlowEditor: FC<{ industry: Industry; onNavigate?: (tab: string) => void }> = ({ industry, onNavigate }) => {
-  const [processConfig, setProcessConfig] = useState<ProcessConfiguration>(
-    defaultProcessConfigurations[industry.id]
-  );
-  const [selectedStep, setSelectedStep] = useState<ProcessStepConfig | null>(null);
+  const [processes, setProcesses] = useState<ProcessDefinition[]>(getIndustryProcesses(industry.id));
+  const [expandedProcess, setExpandedProcess] = useState<string | null>(processes[0]?.id || null);
+  const [showAddProcess, setShowAddProcess] = useState(false);
 
-  // Map process step IDs to navigation tabs
-  const stepNavigation: Record<string, string> = {
-    'coa_verification': 'coa',
-    'prn_management': 'prn',
-  };
+  // Update processes when industry changes
+  React.useEffect(() => {
+    const newProcesses = getIndustryProcesses(industry.id);
+    setProcesses(newProcesses);
+    setExpandedProcess(newProcesses[0]?.id || null);
+  }, [industry.id]);
 
-  const handleStepDoubleClick = (step: ProcessStepConfig) => {
-    setSelectedStep(step);
-  };
-
-  const handleStepClick = (step: ProcessStepConfig) => {
-    const navTarget = stepNavigation[step.id];
-    if (navTarget && onNavigate) {
-      onNavigate(navTarget);
+  const handleNavigateToProcess = (process: ProcessDefinition) => {
+    if (process.navTab && onNavigate) {
+      onNavigate(process.navTab);
     }
   };
-  
-  const handleStepSave = (updatedStep: ProcessStepConfig) => {
-    setProcessConfig({
-      ...processConfig,
-      steps: processConfig.steps.map(s => s.id === updatedStep.id ? updatedStep : s),
-      lastModified: new Date().toISOString().split('T')[0],
-    });
-    setSelectedStep(null);
-  };
-  
-  const getTotalEvidence = (step: ProcessStepConfig) => step.evidenceRequirements.length;
-  const getRequiredEvidence = (step: ProcessStepConfig) => step.evidenceRequirements.filter(e => e.required).length;
-  const getTotalCriteria = (step: ProcessStepConfig) => step.evidenceRequirements.reduce((sum, e) => sum + e.verificationCriteria.length, 0);
-  
-  return (
-    <Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '42px', height: '42px', borderRadius: tokens.radius.lg, background: `${industry.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="workflow" size={24} color={industry.color} />
-          </div>
-          <div>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: tokens.colors.text.primary, margin: 0 }}>
-              Configuration du processus
-            </h3>
-            <p style={{ fontSize: '13px', color: tokens.colors.text.muted, margin: '2px 0 0' }}>
-              {processConfig.name} • v{processConfig.version}
-            </p>
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <span style={{ fontSize: '12px', color: tokens.colors.text.muted }}>
-            Modifié: {processConfig.lastModified}
-          </span>
-          <Button variant="secondary" size="sm" icon="download">Exporter</Button>
-        </div>
-      </div>
-      
-      {/* Info Banner */}
-      <div style={{ 
-        background: tokens.colors.info.light, 
-        borderRadius: tokens.radius.md, 
-        padding: '12px 16px', 
-        marginBottom: '24px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        border: `1px solid ${tokens.colors.info.main}20`
-      }}>
-        <Icon name="edit" size={18} color={tokens.colors.info.main} />
-        <span style={{ fontSize: '13px', color: tokens.colors.text.secondary }}>
-          <strong>Double-cliquez</strong> sur une étape pour configurer les preuves requises et les critères de vérification
-        </span>
-      </div>
-      
-      {/* Process Flow Visualization */}
-      <div style={{ display: 'flex', alignItems: 'stretch', gap: '12px', overflowX: 'auto', padding: '10px 0' }}>
-        {processConfig.steps.map((step, index) => {
-          const totalEvidence = getTotalEvidence(step);
-          const requiredEvidence = getRequiredEvidence(step);
-          const totalCriteria = getTotalCriteria(step);
-          const isConfigured = totalEvidence > 0;
-          
-          const isNavigable = !!stepNavigation[step.id];
 
-          return (
-            <React.Fragment key={step.id}>
-              <div
-                onClick={() => handleStepClick(step)}
-                onDoubleClick={() => handleStepDoubleClick(step)}
-                style={{
-                  flex: '1',
-                  minWidth: '180px',
-                  background: isNavigable ? `${industry.color}10` : (isConfigured ? tokens.colors.cream[50] : tokens.colors.cream[300]),
-                  borderRadius: tokens.radius.lg,
-                  padding: '20px 16px',
-                  border: `2px solid ${isNavigable ? industry.color : (isConfigured ? industry.color : tokens.colors.cream[400])}`,
-                  cursor: 'pointer',
-                  transition: 'all 200ms ease',
-                  position: 'relative',
-                  boxShadow: isNavigable ? `0 2px 8px ${industry.color}30` : 'none',
-                }}
-              >
-                {/* Step Header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-                  <div style={{
-                    width: '48px', height: '48px', borderRadius: '50%',
-                    background: isConfigured ? `${industry.color}20` : tokens.colors.cream[400],
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    border: `2px solid ${isConfigured ? industry.color : tokens.colors.cream[500]}`,
-                  }}>
-                    <Icon name={step.icon} size={24} color={isConfigured ? industry.color : tokens.colors.text.muted} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '11px', color: tokens.colors.text.muted, textTransform: 'uppercase', fontWeight: 600 }}>
-                      Étape {index + 1}
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: tokens.colors.text.primary }}>
-                      {step.label}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Step Description */}
-                <p style={{ fontSize: '12px', color: tokens.colors.text.secondary, margin: '0 0 14px', lineHeight: 1.4 }}>
-                  {step.description}
+  return (
+    <div>
+      {/* Header */}
+      <Card style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: tokens.radius.lg, background: `${industry.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon name="workflow" size={24} color={industry.color} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: tokens.colors.text.primary, margin: 0 }}>
+                Process Configuration
+              </h3>
+              <p style={{ fontSize: '13px', color: tokens.colors.text.muted, margin: '2px 0 0' }}>
+                {industry.name} • {processes.length} process{processes.length > 1 ? 'es' : ''} configured
+              </p>
+            </div>
+          </div>
+          <Button variant="primary" size="sm" icon="plus" onClick={() => setShowAddProcess(true)}>
+            Add Process
+          </Button>
+        </div>
+      </Card>
+
+      {/* Process List */}
+      {processes.map((process) => (
+        <Card key={process.id} style={{ marginBottom: '16px' }}>
+          {/* Process Header - Clickable */}
+          <div
+            onClick={() => setExpandedProcess(expandedProcess === process.id ? null : process.id)}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: tokens.radius.lg,
+                background: `${process.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: `2px solid ${process.color}`
+              }}>
+                <Icon name={process.icon} size={22} color={process.color} />
+              </div>
+              <div>
+                <h4 style={{ fontSize: '15px', fontWeight: 700, color: tokens.colors.text.primary, margin: 0 }}>
+                  {process.name}
+                </h4>
+                <p style={{ fontSize: '12px', color: tokens.colors.text.muted, margin: '2px 0 0' }}>
+                  {process.description}
                 </p>
-                
-                {/* Evidence Summary */}
-                <div style={{ 
-                  background: tokens.colors.cream[200], 
-                  borderRadius: tokens.radius.md, 
-                  padding: '12px',
-                  marginBottom: '12px'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: tokens.colors.text.secondary }}>PREUVES</span>
-                    {isConfigured ? (
-                      <Badge variant="success">{totalEvidence} configurée(s)</Badge>
-                    ) : (
-                      <Badge variant="warning">Non configuré</Badge>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Badge variant="info">{process.steps.length} steps</Badge>
+              {process.navTab && (
+                <span onClick={(e) => { e.stopPropagation(); handleNavigateToProcess(process); }}>
+                  <Button variant="secondary" size="sm" icon="arrowRight">
+                    View Details
+                  </Button>
+                </span>
+              )}
+              <Icon name={expandedProcess === process.id ? 'chevronUp' : 'chevronDown'} size={20} color={tokens.colors.text.muted} />
+            </div>
+          </div>
+
+          {/* Expanded Process Steps */}
+          {expandedProcess === process.id && (
+            <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: `1px solid ${tokens.colors.cream[400]}` }}>
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '10px 0' }}>
+                {process.steps.map((step, idx) => (
+                  <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{
+                      minWidth: '140px',
+                      background: step.status === 'verified' ? tokens.colors.success.light :
+                                 step.status === 'pending' ? tokens.colors.neutral.light : tokens.colors.action.light,
+                      borderRadius: tokens.radius.md,
+                      padding: '14px 12px',
+                      textAlign: 'center',
+                      border: `2px solid ${step.status === 'verified' ? tokens.colors.success.main :
+                              step.status === 'pending' ? tokens.colors.neutral.main : tokens.colors.action.main}`,
+                    }}>
+                      <div style={{
+                        width: '36px', height: '36px', borderRadius: '50%',
+                        background: step.status === 'verified' ? tokens.colors.success.main :
+                                   step.status === 'pending' ? tokens.colors.neutral.main : tokens.colors.action.main,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px'
+                      }}>
+                        <Icon name={step.icon} size={18} color="#FFF" />
+                      </div>
+                      <div style={{ fontSize: '11px', fontWeight: 600, color: tokens.colors.text.primary, marginBottom: '4px' }}>
+                        {step.label}
+                      </div>
+                      <div style={{ fontSize: '10px', color: tokens.colors.text.muted, lineHeight: 1.3 }}>
+                        {step.description}
+                      </div>
+                    </div>
+                    {idx < process.steps.length - 1 && (
+                      <div style={{ padding: '0 4px' }}>
+                        <Icon name="arrowRight" size={16} color={tokens.colors.text.muted} />
+                      </div>
                     )}
                   </div>
-                  
-                  {isConfigured && (
-                    <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
-                      <div>
-                        <span style={{ color: tokens.colors.text.muted }}>Requises: </span>
-                        <span style={{ fontWeight: 600, color: tokens.colors.danger.main }}>{requiredEvidence}</span>
-                      </div>
-                      <div>
-                        <span style={{ color: tokens.colors.text.muted }}>Règles: </span>
-                        <span style={{ fontWeight: 600, color: tokens.colors.text.primary }}>{totalCriteria}</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {!isConfigured && (
-                    <div style={{ fontSize: '11px', color: tokens.colors.text.muted, fontStyle: 'italic' }}>
-                      Double-cliquez pour configurer
-                    </div>
-                  )}
-                </div>
-                
-                {/* Evidence Type Icons */}
-                {isConfigured && (
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    {step.evidenceRequirements.map(ev => {
-                      const config = evidenceTypeConfig[ev.type];
-                      return (
-                        <div
-                          key={ev.id}
-                          title={ev.name}
-                          style={{
-                            width: '28px', height: '28px', borderRadius: tokens.radius.sm,
-                            background: `${config.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            border: ev.required ? `2px solid ${config.color}` : 'none',
-                          }}
-                        >
-                          <Icon name={config.icon} size={14} color={config.color} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                
-                {/* Responsible Role */}
-                {step.responsibleRole && (
-                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${tokens.colors.cream[400]}`, fontSize: '11px', color: tokens.colors.text.muted }}>
-                    <Icon name="siteOperator" size={12} color={tokens.colors.text.muted} /> {step.responsibleRole}
-                    {step.estimatedDuration && <span style={{ marginLeft: '10px' }}>• {step.estimatedDuration}</span>}
-                  </div>
-                )}
-                
-                {/* Edit indicator or Navigation indicator */}
-                {isNavigable ? (
-                  <div style={{
-                    position: 'absolute', top: '8px', right: '8px',
-                    background: industry.color, borderRadius: tokens.radius.sm,
-                    padding: '4px 10px', fontSize: '10px', color: 'white',
-                    display: 'flex', alignItems: 'center', gap: '4px',
-                    fontWeight: 600,
-                  }}>
-                    <Icon name="arrowRight" size={10} color="white" /> Voir détails
-                  </div>
-                ) : (
-                  <div style={{
-                    position: 'absolute', top: '8px', right: '8px',
-                    background: 'rgba(255,255,255,0.9)', borderRadius: tokens.radius.sm,
-                    padding: '4px 8px', fontSize: '10px', color: tokens.colors.text.muted,
-                    display: 'flex', alignItems: 'center', gap: '4px',
-                    opacity: 0.7,
-                  }}>
-                    <Icon name="edit" size={10} /> Double-clic
-                  </div>
-                )}
+                ))}
               </div>
-              
-              {/* Arrow between steps */}
-              {index < processConfig.steps.length - 1 && (
-                <div style={{ display: 'flex', alignItems: 'center', color: tokens.colors.cream[500] }}>
-                  <Icon name="arrowRight" size={24} />
+
+              {/* Process Stats */}
+              <div style={{ display: 'flex', gap: '24px', marginTop: '16px', paddingTop: '16px', borderTop: `1px solid ${tokens.colors.cream[300]}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: tokens.colors.success.main }} />
+                  <span style={{ fontSize: '12px', color: tokens.colors.text.secondary }}>
+                    {process.steps.filter(s => s.status === 'verified').length} Verified
+                  </span>
                 </div>
-              )}
-            </React.Fragment>
-          );
-        })}
-      </div>
-      
-      {/* Summary Stats */}
-      <div style={{ 
-        display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', 
-        marginTop: '24px', paddingTop: '20px', borderTop: `1px solid ${tokens.colors.cream[400]}`
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: industry.color }}>{processConfig.steps.length}</div>
-          <div style={{ fontSize: '12px', color: tokens.colors.text.muted }}>Étapes</div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.success.main }}>
-            {processConfig.steps.reduce((sum, s) => sum + getTotalEvidence(s), 0)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: tokens.colors.neutral.main }} />
+                  <span style={{ fontSize: '12px', color: tokens.colors.text.secondary }}>
+                    {process.steps.filter(s => s.status === 'pending').length} Pending
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: tokens.colors.action.main }} />
+                  <span style={{ fontSize: '12px', color: tokens.colors.text.secondary }}>
+                    {process.steps.filter(s => s.status === 'flagged').length} Action Required
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </Card>
+      ))}
+
+      {/* Add Process Modal */}
+      {showAddProcess && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: tokens.colors.cream[50], borderRadius: tokens.radius.xl, padding: '24px', width: '500px', maxWidth: '90vw' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Add New Process</h3>
+              <button onClick={() => setShowAddProcess(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <Icon name="close" size={20} color={tokens.colors.text.muted} />
+              </button>
+            </div>
+            <p style={{ fontSize: '13px', color: tokens.colors.text.secondary, marginBottom: '20px' }}>
+              Create a new process workflow for {industry.name}. Define the steps, evidence requirements, and verification criteria.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+              <input placeholder="Process Name (e.g., Quality Control Process)" style={{ padding: '12px', borderRadius: tokens.radius.md, border: `1px solid ${tokens.colors.cream[400]}`, fontSize: '14px' }} />
+              <textarea placeholder="Process Description" rows={3} style={{ padding: '12px', borderRadius: tokens.radius.md, border: `1px solid ${tokens.colors.cream[400]}`, fontSize: '14px', resize: 'vertical' }} />
+            </div>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <Button variant="secondary" onClick={() => setShowAddProcess(false)}>Cancel</Button>
+              <Button variant="primary" icon="plus">Create Process</Button>
+            </div>
           </div>
-          <div style={{ fontSize: '12px', color: tokens.colors.text.muted }}>Preuves totales</div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.danger.main }}>
-            {processConfig.steps.reduce((sum, s) => sum + getRequiredEvidence(s), 0)}
-          </div>
-          <div style={{ fontSize: '12px', color: tokens.colors.text.muted }}>Preuves obligatoires</div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.warning.main }}>
-            {processConfig.steps.reduce((sum, s) => sum + getTotalCriteria(s), 0)}
-          </div>
-          <div style={{ fontSize: '12px', color: tokens.colors.text.muted }}>Règles de validation</div>
-        </div>
-      </div>
-      
-      {/* Configuration Modal */}
-      {selectedStep && (
-        <StepConfigurationModal
-          step={selectedStep}
-          industry={industry}
-          onClose={() => setSelectedStep(null)}
-          onSave={handleStepSave}
-        />
       )}
-    </Card>
+    </div>
   );
 };
 
@@ -3568,7 +3588,71 @@ const ErrorsTrackingView: FC<{ industry: Industry }> = ({ industry }) => {
 const Sidebar: FC<{ industry: Industry; persona: Persona; collapsed: boolean; activeTab: string; onTabChange: (tab: string) => void }> = ({ industry, persona, collapsed, activeTab, onTabChange }) => {
   const { t } = useLanguage();
 
-  // Base navigation items for all industries
+  // Persona-specific navigation for Site Operator (simplified view)
+  if (persona.id === 'site_operator') {
+    const operatorNavItems = [
+      { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+      { id: 'upload', label: 'Document Upload', icon: 'upload' },
+      { id: 'claims', label: 'Document Claims', icon: 'alertTriangle' },
+    ];
+
+    return (
+      <aside style={{
+        width: collapsed ? '72px' : '260px',
+        background: `linear-gradient(180deg, ${tokens.colors.brand[800]} 0%, ${tokens.colors.brand[600]} 100%)`,
+        padding: '20px 12px',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'fixed',
+        height: '100vh',
+        transition: 'width 200ms ease',
+        zIndex: 100,
+        boxShadow: tokens.shadow.lg,
+      }}>
+        <div style={{ padding: collapsed ? '4px 0 24px' : '4px 8px 24px', display: 'flex', justifyContent: collapsed ? 'center' : 'flex-start' }}>
+          <Logo collapsed={collapsed} variant="light" />
+        </div>
+
+        {!collapsed && (
+          <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: tokens.radius.md, padding: '12px', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.15)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: tokens.radius.md, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name={persona.icon} size={20} color="#FFF" />
+              </div>
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#FFF' }}>{persona.title}</div>
+                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)' }}>{industry.name}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <nav style={{ flex: 1 }}>
+          {operatorNavItems.map(item => (
+            <button key={item.id} onClick={() => onTabChange(item.id)} style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: '12px',
+              padding: collapsed ? '12px' : '11px 14px', marginBottom: '4px', border: 'none', borderRadius: tokens.radius.md,
+              background: activeTab === item.id ? 'rgba(255,255,255,0.2)' : 'transparent',
+              color: activeTab === item.id ? '#FFF' : 'rgba(255,255,255,0.7)',
+              cursor: 'pointer', transition: 'all 150ms ease', justifyContent: collapsed ? 'center' : 'flex-start',
+              fontFamily: 'inherit',
+            }}>
+              <Icon name={item.icon} size={20} />
+              {!collapsed && <span style={{ fontSize: '13px', fontWeight: 500 }}>{item.label}</span>}
+            </button>
+          ))}
+        </nav>
+
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px', marginTop: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>
+            {!collapsed && <span>© 2024 eco₂Veritas</span>}
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
+  // Base navigation items for Compliance Officer and Operations Manager
   const baseNavItems = [
     { id: 'dashboard', label: t.nav.dashboard, icon: 'home' },
     { id: 'processconfig', label: t.nav.processConfig, icon: 'workflow' },
