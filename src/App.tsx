@@ -24,6 +24,9 @@ interface Translations {
     massBalance: string;
     reports: string;
     settings: string;
+    prn: string;
+    coa: string;
+    errors: string;
   };
   // Status labels
   status: {
@@ -110,6 +113,76 @@ interface Translations {
     reportGenerator: string;
     reportGeneratorDesc: string;
   };
+  // PRN Management
+  prn: {
+    title: string;
+    subtitle: string;
+    registration: string;
+    registrationDesc: string;
+    dataCollection: string;
+    dataCollectionDesc: string;
+    obligationCalc: string;
+    obligationCalcDesc: string;
+    acquisition: string;
+    acquisitionDesc: string;
+    verification: string;
+    verificationDesc: string;
+    compliance: string;
+    complianceDesc: string;
+    materialType: string;
+    tonnage: string;
+    target: string;
+    acquired: string;
+    remaining: string;
+    coverage: string;
+    accreditedReprocessor: string;
+    npwdReference: string;
+  };
+  // COA Management
+  coa: {
+    title: string;
+    subtitle: string;
+    supplierQualification: string;
+    supplierQualificationDesc: string;
+    documentReception: string;
+    documentReceptionDesc: string;
+    productIdentification: string;
+    productIdentificationDesc: string;
+    batchTracking: string;
+    batchTrackingDesc: string;
+    testResultsReview: string;
+    testResultsReviewDesc: string;
+    specificationCheck: string;
+    specificationCheckDesc: string;
+    authorization: string;
+    authorizationDesc: string;
+    batchNumber: string;
+    testParameter: string;
+    specification: string;
+    result: string;
+    passedTests: string;
+    failedTests: string;
+    errorRate: string;
+  };
+  // Errors tracking
+  errors: {
+    title: string;
+    subtitle: string;
+    totalErrors: string;
+    criticalErrors: string;
+    warnings: string;
+    missingDocs: string;
+    errorType: string;
+    affectedItem: string;
+    detectedDate: string;
+    resolveAction: string;
+    markResolved: string;
+    filterByType: string;
+    filterByStatus: string;
+    all: string;
+    unresolved: string;
+    resolved: string;
+  };
   // Demo
   demo: {
     switchIndustry: string;
@@ -132,6 +205,9 @@ const translations: Record<Language, Translations> = {
       massBalance: 'Mass Balance',
       reports: 'Reports',
       settings: 'Settings',
+      prn: 'PRN Management',
+      coa: 'COA Verification',
+      errors: 'Errors & Missing',
     },
     status: {
       verified: 'Verified',
@@ -214,6 +290,73 @@ const translations: Record<Language, Translations> = {
       reportGenerator: 'Report Generator',
       reportGeneratorDesc: 'Generate compliance reports, certificates, and audit documentation',
     },
+    prn: {
+      title: 'PRN Management',
+      subtitle: 'Packaging Recovery Notes tracking and compliance',
+      registration: 'Registration',
+      registrationDesc: 'Register with NPWD or compliance scheme',
+      dataCollection: 'Data Collection',
+      dataCollectionDesc: 'Collect packaging data by material type',
+      obligationCalc: 'Obligation Calculation',
+      obligationCalcDesc: 'Calculate PRN requirements based on tonnage',
+      acquisition: 'PRN Acquisition',
+      acquisitionDesc: 'Purchase PRNs from accredited reprocessors',
+      verification: 'Verification',
+      verificationDesc: 'Verify PRN authenticity and accreditation',
+      compliance: 'Compliance Certificate',
+      complianceDesc: 'Submit annual Certificate of Compliance',
+      materialType: 'Material Type',
+      tonnage: 'Tonnage (t)',
+      target: 'Target (%)',
+      acquired: 'PRN Acquired',
+      remaining: 'Remaining',
+      coverage: 'Coverage',
+      accreditedReprocessor: 'Accredited Reprocessor',
+      npwdReference: 'NPWD Reference',
+    },
+    coa: {
+      title: 'COA Verification',
+      subtitle: 'Certificate of Analysis management and validation',
+      supplierQualification: 'Supplier Qualification',
+      supplierQualificationDesc: 'Verify supplier accreditation status',
+      documentReception: 'Document Reception',
+      documentReceptionDesc: 'Receive COA with material shipment',
+      productIdentification: 'Product Identification',
+      productIdentificationDesc: 'Match product info to purchase order',
+      batchTracking: 'Batch Tracking',
+      batchTrackingDesc: 'Record batch/lot number for traceability',
+      testResultsReview: 'Test Results Review',
+      testResultsReviewDesc: 'Verify all required tests performed',
+      specificationCheck: 'Specification Check',
+      specificationCheckDesc: 'Compare results vs specifications',
+      authorization: 'Authorization',
+      authorizationDesc: 'Verify signature from authorized personnel',
+      batchNumber: 'Batch Number',
+      testParameter: 'Test Parameter',
+      specification: 'Specification',
+      result: 'Result',
+      passedTests: 'Passed Tests',
+      failedTests: 'Failed Tests',
+      errorRate: 'Error Rate',
+    },
+    errors: {
+      title: 'Errors & Missing Items',
+      subtitle: 'Track and resolve compliance issues',
+      totalErrors: 'Total Errors',
+      criticalErrors: 'Critical Errors',
+      warnings: 'Warnings',
+      missingDocs: 'Missing Documents',
+      errorType: 'Error Type',
+      affectedItem: 'Affected Item',
+      detectedDate: 'Detected',
+      resolveAction: 'Action Required',
+      markResolved: 'Mark Resolved',
+      filterByType: 'Filter by Type',
+      filterByStatus: 'Filter by Status',
+      all: 'All',
+      unresolved: 'Unresolved',
+      resolved: 'Resolved',
+    },
     demo: {
       switchIndustry: 'Demo: Switch Industry',
     },
@@ -232,6 +375,9 @@ const translations: Record<Language, Translations> = {
       massBalance: 'Bilan matière',
       reports: 'Rapports',
       settings: 'Paramètres',
+      prn: 'Gestion PRN',
+      coa: 'Vérification COA',
+      errors: 'Erreurs & Manquants',
     },
     status: {
       verified: 'Vérifié',
@@ -313,6 +459,73 @@ const translations: Record<Language, Translations> = {
       materialFlows: 'Flux de matières',
       reportGenerator: 'Générateur de rapports',
       reportGeneratorDesc: 'Générer des rapports de conformité, certificats et documentation d\'audit',
+    },
+    prn: {
+      title: 'Gestion PRN',
+      subtitle: 'Suivi et conformité des Packaging Recovery Notes',
+      registration: 'Enregistrement',
+      registrationDesc: 'S\'enregistrer auprès du NPWD ou d\'un schéma de conformité',
+      dataCollection: 'Collecte de données',
+      dataCollectionDesc: 'Collecter les données d\'emballage par type de matériau',
+      obligationCalc: 'Calcul des obligations',
+      obligationCalcDesc: 'Calculer les besoins en PRN selon le tonnage',
+      acquisition: 'Acquisition PRN',
+      acquisitionDesc: 'Acheter des PRN auprès de reprocesseurs accrédités',
+      verification: 'Vérification',
+      verificationDesc: 'Vérifier l\'authenticité et l\'accréditation des PRN',
+      compliance: 'Certificat de conformité',
+      complianceDesc: 'Soumettre le certificat de conformité annuel',
+      materialType: 'Type de matériau',
+      tonnage: 'Tonnage (t)',
+      target: 'Objectif (%)',
+      acquired: 'PRN acquis',
+      remaining: 'Restant',
+      coverage: 'Couverture',
+      accreditedReprocessor: 'Reprocesseur accrédité',
+      npwdReference: 'Référence NPWD',
+    },
+    coa: {
+      title: 'Vérification COA',
+      subtitle: 'Gestion et validation des Certificats d\'Analyse',
+      supplierQualification: 'Qualification fournisseur',
+      supplierQualificationDesc: 'Vérifier le statut d\'accréditation du fournisseur',
+      documentReception: 'Réception document',
+      documentReceptionDesc: 'Recevoir le COA avec la livraison',
+      productIdentification: 'Identification produit',
+      productIdentificationDesc: 'Faire correspondre les infos produit à la commande',
+      batchTracking: 'Suivi des lots',
+      batchTrackingDesc: 'Enregistrer le numéro de lot pour la traçabilité',
+      testResultsReview: 'Revue des résultats',
+      testResultsReviewDesc: 'Vérifier que tous les tests requis sont effectués',
+      specificationCheck: 'Vérification des specs',
+      specificationCheckDesc: 'Comparer les résultats aux spécifications',
+      authorization: 'Autorisation',
+      authorizationDesc: 'Vérifier la signature du personnel autorisé',
+      batchNumber: 'Numéro de lot',
+      testParameter: 'Paramètre de test',
+      specification: 'Spécification',
+      result: 'Résultat',
+      passedTests: 'Tests réussis',
+      failedTests: 'Tests échoués',
+      errorRate: 'Taux d\'erreur',
+    },
+    errors: {
+      title: 'Erreurs & Manquants',
+      subtitle: 'Suivre et résoudre les problèmes de conformité',
+      totalErrors: 'Total erreurs',
+      criticalErrors: 'Erreurs critiques',
+      warnings: 'Avertissements',
+      missingDocs: 'Documents manquants',
+      errorType: 'Type d\'erreur',
+      affectedItem: 'Élément affecté',
+      detectedDate: 'Détecté',
+      resolveAction: 'Action requise',
+      markResolved: 'Marquer résolu',
+      filterByType: 'Filtrer par type',
+      filterByStatus: 'Filtrer par statut',
+      all: 'Tous',
+      unresolved: 'Non résolus',
+      resolved: 'Résolus',
     },
     demo: {
       switchIndustry: 'Démo: Changer d\'industrie',
@@ -1404,29 +1617,38 @@ const StatusBadge: FC<{ status: DocumentStatus }> = ({ status }) => {
 // KPI CARD
 // ============================================================================
 
-const KPICard: FC<{ label: string; value: number | string; unit: string; target?: number; industry: Industry }> = ({ label, value, unit, target, industry }) => {
+const KPICard: FC<{ label: string; value: number | string; unit: string; target?: number; industry: Industry; onClick?: () => void; linkLabel?: string }> = ({ label, value, unit, target, industry, onClick, linkLabel }) => {
+  const { t } = useLanguage();
   const numValue = typeof value === 'number' ? value : parseFloat(value);
   const progress = target ? Math.min((numValue / target) * 100, 100) : null;
   const isOnTrack = target ? numValue >= target * 0.9 : true;
-  
+
   return (
-    <Card padding="sm">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-        <div style={{ fontSize: '12px', color: tokens.colors.text.muted, fontWeight: 500 }}>{label}</div>
-        {target && <Badge variant={isOnTrack ? 'success' : 'warning'}>{isOnTrack ? 'On Track' : 'Below Target'}</Badge>}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-        <span style={{ fontSize: '28px', fontWeight: 700, color: tokens.colors.text.primary }}>{typeof value === 'number' ? value.toLocaleString() : value}</span>
-        <span style={{ fontSize: '14px', color: tokens.colors.text.muted }}>{unit}</span>
-      </div>
-      {progress !== null && (
-        <div style={{ marginTop: '10px' }}>
-          <div style={{ height: '4px', background: tokens.colors.cream[400], borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress}%`, background: isOnTrack ? tokens.colors.success.main : tokens.colors.warning.main, borderRadius: '2px', transition: 'width 300ms ease' }} />
-          </div>
-          <div style={{ fontSize: '10px', color: tokens.colors.text.muted, marginTop: '4px' }}>Target: {target?.toLocaleString()} {unit}</div>
+    <Card padding="sm" style={{ cursor: onClick ? 'pointer' : 'default', transition: 'transform 150ms ease, box-shadow 150ms ease' }}>
+      <div onClick={onClick} style={{ height: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+          <div style={{ fontSize: '12px', color: tokens.colors.text.muted, fontWeight: 500 }}>{label}</div>
+          {target && <Badge variant={isOnTrack ? 'success' : 'action'}>{isOnTrack ? t.status.onTrack : t.status.belowTarget}</Badge>}
         </div>
-      )}
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+          <span style={{ fontSize: '28px', fontWeight: 700, color: tokens.colors.text.primary }}>{typeof value === 'number' ? value.toLocaleString() : value}</span>
+          <span style={{ fontSize: '14px', color: tokens.colors.text.muted }}>{unit}</span>
+        </div>
+        {progress !== null && (
+          <div style={{ marginTop: '10px' }}>
+            <div style={{ height: '4px', background: tokens.colors.cream[400], borderRadius: '2px', overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${progress}%`, background: isOnTrack ? tokens.colors.success.main : tokens.colors.action.main, borderRadius: '2px', transition: 'width 300ms ease' }} />
+            </div>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, marginTop: '4px' }}>{t.common.target}: {target?.toLocaleString()} {unit}</div>
+          </div>
+        )}
+        {onClick && linkLabel && (
+          <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: tokens.colors.brand[600], fontWeight: 600 }}>
+            <span>{linkLabel}</span>
+            <Icon name="arrowRight" size={12} color={tokens.colors.brand[600]} />
+          </div>
+        )}
+      </div>
     </Card>
   );
 };
@@ -2516,18 +2738,420 @@ const ProcessFlowEditor: FC<{ industry: Industry }> = ({ industry }) => {
 };
 
 // ============================================================================
+// PRN MANAGEMENT VIEW
+// ============================================================================
+
+const PRNManagementView: FC<{ industry: Industry }> = ({ industry }) => {
+  const { t } = useLanguage();
+
+  // PRN Process Steps
+  const processSteps = [
+    { id: 1, key: 'registration', icon: 'document', status: 'verified' as const },
+    { id: 2, key: 'dataCollection', icon: 'reports', status: 'verified' as const },
+    { id: 3, key: 'obligationCalc', icon: 'scale', status: 'verified' as const },
+    { id: 4, key: 'acquisition', icon: 'certificate', status: 'pending' as const },
+    { id: 5, key: 'verification', icon: 'checkCircle', status: 'pending' as const },
+    { id: 6, key: 'compliance', icon: 'trophy', status: 'flagged' as const },
+  ];
+
+  // Mock PRN data by material type
+  const prnData = [
+    { material: 'Paper/Board', tonnage: 450, target: 75, acquired: 340, coverage: 75.6, reprocessor: 'DS Smith Recycling', npwd: 'PRN-2024-001234' },
+    { material: 'Glass', tonnage: 180, target: 85, acquired: 155, coverage: 86.1, reprocessor: 'Encirc Ltd', npwd: 'PRN-2024-001235' },
+    { material: 'Aluminium', tonnage: 45, target: 80, acquired: 36, coverage: 80.0, reprocessor: 'Novelis UK', npwd: 'PRN-2024-001236' },
+    { material: 'Steel', tonnage: 30, target: 85, acquired: 26, coverage: 86.7, reprocessor: 'Tata Steel', npwd: 'PRN-2024-001237' },
+    { material: 'Plastic', tonnage: 280, target: 65, acquired: 170, coverage: 60.7, reprocessor: 'Viridor', npwd: 'PRN-2024-001238' },
+    { material: 'Wood', tonnage: 95, target: 45, acquired: 43, coverage: 45.3, reprocessor: 'Kronospan', npwd: 'PRN-2024-001239' },
+  ];
+
+  const totalTonnage = prnData.reduce((sum, p) => sum + p.tonnage, 0);
+  const totalAcquired = prnData.reduce((sum, p) => sum + p.acquired, 0);
+  const overallCoverage = ((totalAcquired / totalTonnage) * 100).toFixed(1);
+  const belowTarget = prnData.filter(p => p.coverage < p.target).length;
+
+  return (
+    <div>
+      {/* Header */}
+      <Card style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: tokens.radius.lg, background: tokens.colors.brand[600] + '15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="certificate" size={26} color={tokens.colors.brand[600]} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, color: tokens.colors.text.primary, margin: 0 }}>{t.prn.title}</h2>
+            <p style={{ fontSize: '13px', color: tokens.colors.text.muted, margin: '2px 0 0' }}>{t.prn.subtitle}</p>
+          </div>
+          <Button variant="primary" icon="download">{t.actions.export}</Button>
+        </div>
+
+        {/* Summary Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+          <div style={{ background: tokens.colors.cream[300], borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>Total {t.prn.tonnage}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.text.primary }}>{totalTonnage}</div>
+          </div>
+          <div style={{ background: tokens.colors.success.light, borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.prn.acquired}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.success.main }}>{totalAcquired}</div>
+          </div>
+          <div style={{ background: tokens.colors.brand[600] + '15', borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.prn.coverage}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.brand[600] }}>{overallCoverage}%</div>
+          </div>
+          <div style={{ background: belowTarget > 0 ? tokens.colors.action.light : tokens.colors.success.light, borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.status.belowTarget}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: belowTarget > 0 ? tokens.colors.action.main : tokens.colors.success.main }}>{belowTarget}</div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Process Steps */}
+      <Card style={{ marginBottom: '20px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.text.secondary, marginBottom: '16px', textTransform: 'uppercase' }}>PRN Compliance Process</h3>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {processSteps.map((step, idx) => (
+            <div key={step.id} style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+              <div style={{
+                flex: 1,
+                background: step.status === 'verified' ? tokens.colors.success.light : step.status === 'pending' ? tokens.colors.neutral.light : tokens.colors.action.light,
+                borderRadius: tokens.radius.md,
+                padding: '14px',
+                textAlign: 'center',
+                border: `2px solid ${step.status === 'verified' ? tokens.colors.success.main : step.status === 'pending' ? tokens.colors.neutral.main : tokens.colors.action.main}`,
+              }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: step.status === 'verified' ? tokens.colors.success.main : step.status === 'pending' ? tokens.colors.neutral.main : tokens.colors.action.main, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+                  <Icon name={step.icon} size={16} color="#FFF" />
+                </div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: tokens.colors.text.primary }}>{t.prn[step.key as keyof typeof t.prn]}</div>
+                <div style={{ fontSize: '10px', color: tokens.colors.text.muted, marginTop: '4px' }}>{t.prn[`${step.key}Desc` as keyof typeof t.prn]}</div>
+              </div>
+              {idx < processSteps.length - 1 && <span style={{ margin: '0 4px' }}><Icon name="arrowRight" size={16} color={tokens.colors.text.muted} /></span>}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* PRN Data Table */}
+      <Card>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.text.secondary, marginBottom: '16px', textTransform: 'uppercase' }}>PRN {t.prn.coverage} by {t.prn.materialType}</h3>
+        <div style={{ background: tokens.colors.cream[100], borderRadius: tokens.radius.md, overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px 100px 100px 80px 1fr 150px', padding: '10px 14px', background: tokens.colors.cream[300], fontSize: '11px', fontWeight: 600, color: tokens.colors.text.secondary }}>
+            <div>{t.prn.materialType}</div>
+            <div style={{ textAlign: 'right' }}>{t.prn.tonnage}</div>
+            <div style={{ textAlign: 'right' }}>{t.prn.target}</div>
+            <div style={{ textAlign: 'right' }}>{t.prn.acquired}</div>
+            <div style={{ textAlign: 'right' }}>{t.prn.remaining}</div>
+            <div style={{ textAlign: 'right' }}>{t.prn.coverage}</div>
+            <div>{t.prn.accreditedReprocessor}</div>
+            <div>{t.prn.npwdReference}</div>
+          </div>
+          {prnData.map((prn, i) => {
+            const remaining = Math.round(prn.tonnage * (prn.target / 100)) - prn.acquired;
+            const isOnTarget = prn.coverage >= prn.target;
+            return (
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px 100px 100px 80px 1fr 150px', padding: '12px 14px', borderBottom: i < prnData.length - 1 ? `1px solid ${tokens.colors.cream[300]}` : 'none', fontSize: '13px', alignItems: 'center' }}>
+                <div style={{ fontWeight: 600, color: tokens.colors.text.primary }}>{prn.material}</div>
+                <div style={{ textAlign: 'right' }}>{prn.tonnage}</div>
+                <div style={{ textAlign: 'right' }}>{prn.target}%</div>
+                <div style={{ textAlign: 'right', fontWeight: 600, color: tokens.colors.success.main }}>{prn.acquired}</div>
+                <div style={{ textAlign: 'right', fontWeight: 600, color: remaining > 0 ? tokens.colors.action.main : tokens.colors.success.main }}>{Math.max(0, remaining)}</div>
+                <div style={{ textAlign: 'right' }}><Badge variant={isOnTarget ? 'success' : 'action'}>{prn.coverage.toFixed(1)}%</Badge></div>
+                <div style={{ color: tokens.colors.text.secondary, fontSize: '12px' }}>{prn.reprocessor}</div>
+                <div style={{ fontFamily: 'monospace', fontSize: '11px', color: tokens.colors.text.muted }}>{prn.npwd}</div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ============================================================================
+// COA VERIFICATION VIEW
+// ============================================================================
+
+const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
+  const { t } = useLanguage();
+
+  // COA Verification Steps
+  const verificationSteps = [
+    { id: 1, key: 'supplierQualification', icon: 'complianceOfficer', status: 'verified' as const },
+    { id: 2, key: 'documentReception', icon: 'document', status: 'verified' as const },
+    { id: 3, key: 'productIdentification', icon: 'search', status: 'verified' as const },
+    { id: 4, key: 'batchTracking', icon: 'flows', status: 'verified' as const },
+    { id: 5, key: 'testResultsReview', icon: 'reports', status: 'pending' as const },
+    { id: 6, key: 'specificationCheck', icon: 'checkCircle', status: 'pending' as const },
+    { id: 7, key: 'authorization', icon: 'certificate', status: 'flagged' as const },
+  ];
+
+  // Mock COA data
+  const coaData = [
+    { id: 'COA-2024-0891', batch: 'BATCH-PET-2024-156', supplier: 'Veolia UK', material: 'rPET Flakes', received: '2024-12-15', tests: 8, passed: 8, status: 'verified' as const },
+    { id: 'COA-2024-0892', batch: 'BATCH-HDPE-2024-089', supplier: 'SUEZ Recycling', material: 'HDPE Pellets', received: '2024-12-14', tests: 6, passed: 5, status: 'flagged' as const },
+    { id: 'COA-2024-0893', batch: 'BATCH-PP-2024-234', supplier: 'Biffa', material: 'PP Regranulate', received: '2024-12-13', tests: 7, passed: 7, status: 'verified' as const },
+    { id: 'COA-2024-0894', batch: 'BATCH-PET-2024-157', supplier: 'Veolia UK', material: 'rPET Flakes', received: '2024-12-12', tests: 8, passed: 6, status: 'flagged' as const },
+    { id: 'COA-2024-0895', batch: 'BATCH-LDPE-2024-045', supplier: 'FCC Environment', material: 'LDPE Film', received: '2024-12-11', tests: 5, passed: 5, status: 'verified' as const },
+    { id: 'COA-2024-0896', batch: 'BATCH-PET-2024-158', supplier: 'Viridor', material: 'rPET Flakes', received: '2024-12-10', tests: 8, passed: 0, status: 'pending' as const },
+  ];
+
+  const totalCOAs = coaData.length;
+  const verifiedCOAs = coaData.filter(c => c.status === 'verified').length;
+  const flaggedCOAs = coaData.filter(c => c.status === 'flagged').length;
+  const totalTests = coaData.reduce((sum, c) => sum + c.tests, 0);
+  const passedTests = coaData.reduce((sum, c) => sum + c.passed, 0);
+  const errorRate = (((totalTests - passedTests) / totalTests) * 100).toFixed(1);
+
+  return (
+    <div>
+      {/* Header */}
+      <Card style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: tokens.radius.lg, background: tokens.colors.brand[600] + '15', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="document" size={26} color={tokens.colors.brand[600]} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, color: tokens.colors.text.primary, margin: 0 }}>{t.coa.title}</h2>
+            <p style={{ fontSize: '13px', color: tokens.colors.text.muted, margin: '2px 0 0' }}>{t.coa.subtitle}</p>
+          </div>
+          <Button variant="secondary" icon="upload">{t.actions.upload} COA</Button>
+        </div>
+
+        {/* Summary Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
+          <div style={{ background: tokens.colors.cream[300], borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>Total COAs</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.text.primary }}>{totalCOAs}</div>
+          </div>
+          <div style={{ background: tokens.colors.success.light, borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.status.verified}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.success.main }}>{verifiedCOAs}</div>
+          </div>
+          <div style={{ background: tokens.colors.action.light, borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.coa.failedTests}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.action.main }}>{flaggedCOAs}</div>
+          </div>
+          <div style={{ background: tokens.colors.success.light, borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.coa.passedTests}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.success.main }}>{passedTests}/{totalTests}</div>
+          </div>
+          <div style={{ background: parseFloat(errorRate) > 5 ? tokens.colors.action.light : tokens.colors.neutral.light, borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.coa.errorRate}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: parseFloat(errorRate) > 5 ? tokens.colors.action.main : tokens.colors.neutral.main }}>{errorRate}%</div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Verification Process */}
+      <Card style={{ marginBottom: '20px' }}>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.text.secondary, marginBottom: '16px', textTransform: 'uppercase' }}>COA Verification Process</h3>
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto' }}>
+          {verificationSteps.map((step, idx) => (
+            <div key={step.id} style={{ flex: 1, minWidth: '100px', display: 'flex', alignItems: 'center' }}>
+              <div style={{
+                flex: 1,
+                background: step.status === 'verified' ? tokens.colors.success.light : step.status === 'pending' ? tokens.colors.neutral.light : tokens.colors.action.light,
+                borderRadius: tokens.radius.md,
+                padding: '12px 8px',
+                textAlign: 'center',
+                border: `2px solid ${step.status === 'verified' ? tokens.colors.success.main : step.status === 'pending' ? tokens.colors.neutral.main : tokens.colors.action.main}`,
+              }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: step.status === 'verified' ? tokens.colors.success.main : step.status === 'pending' ? tokens.colors.neutral.main : tokens.colors.action.main, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px' }}>
+                  <Icon name={step.icon} size={14} color="#FFF" />
+                </div>
+                <div style={{ fontSize: '10px', fontWeight: 600, color: tokens.colors.text.primary }}>{t.coa[step.key as keyof typeof t.coa]}</div>
+              </div>
+              {idx < verificationSteps.length - 1 && <span style={{ margin: '0 2px', flexShrink: 0 }}><Icon name="arrowRight" size={12} color={tokens.colors.text.muted} /></span>}
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* COA Table */}
+      <Card>
+        <h3 style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.text.secondary, marginBottom: '16px', textTransform: 'uppercase' }}>Recent COA Documents</h3>
+        <div style={{ background: tokens.colors.cream[100], borderRadius: tokens.radius.md, overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '130px 160px 1fr 120px 100px 100px 100px 80px', padding: '10px 14px', background: tokens.colors.cream[300], fontSize: '11px', fontWeight: 600, color: tokens.colors.text.secondary }}>
+            <div>COA ID</div>
+            <div>{t.coa.batchNumber}</div>
+            <div>Supplier</div>
+            <div>{t.common.material}</div>
+            <div>{t.common.date}</div>
+            <div style={{ textAlign: 'center' }}>Tests</div>
+            <div style={{ textAlign: 'center' }}>{t.coa.result}</div>
+            <div style={{ textAlign: 'center' }}>{t.common.status}</div>
+          </div>
+          {coaData.map((coa, i) => (
+            <div key={i} style={{ display: 'grid', gridTemplateColumns: '130px 160px 1fr 120px 100px 100px 100px 80px', padding: '12px 14px', borderBottom: i < coaData.length - 1 ? `1px solid ${tokens.colors.cream[300]}` : 'none', fontSize: '13px', alignItems: 'center' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: tokens.colors.brand[600], fontWeight: 600 }}>{coa.id}</div>
+              <div style={{ fontFamily: 'monospace', fontSize: '11px', color: tokens.colors.text.muted }}>{coa.batch}</div>
+              <div style={{ fontWeight: 500, color: tokens.colors.text.primary }}>{coa.supplier}</div>
+              <div style={{ color: tokens.colors.text.secondary }}>{coa.material}</div>
+              <div style={{ color: tokens.colors.text.muted }}>{coa.received}</div>
+              <div style={{ textAlign: 'center' }}>
+                <span style={{ fontWeight: 600, color: coa.passed === coa.tests ? tokens.colors.success.main : tokens.colors.action.main }}>{coa.passed}</span>
+                <span style={{ color: tokens.colors.text.muted }}>/{coa.tests}</span>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ width: '100%', height: '6px', background: tokens.colors.cream[400], borderRadius: '3px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(coa.passed / coa.tests) * 100}%`, background: coa.passed === coa.tests ? tokens.colors.success.main : tokens.colors.action.main }} />
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}><StatusBadge status={coa.status} /></div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ============================================================================
+// ERRORS & MISSING ITEMS VIEW
+// ============================================================================
+
+const ErrorsTrackingView: FC<{ industry: Industry }> = ({ industry }) => {
+  const { t } = useLanguage();
+  const [filter, setFilter] = useState<'all' | 'critical' | 'warning' | 'missing'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'unresolved' | 'resolved'>('all');
+
+  // Mock error data
+  const errorsData = [
+    { id: 1, type: 'critical', icon: 'xCircle', title: 'COA Test Failure', description: 'Moisture content exceeds specification (5.2% vs 4.0% max)', item: 'BATCH-HDPE-2024-089', date: '2024-12-14', resolved: false },
+    { id: 2, type: 'critical', icon: 'xCircle', title: 'PRN Coverage Gap', description: 'Plastic PRN coverage below target (60.7% vs 65% target)', item: 'PRN-Plastic-2024', date: '2024-12-13', resolved: false },
+    { id: 3, type: 'warning', icon: 'alertTriangle', title: 'Certificate Expiring', description: 'ISCC+ certificate expires in 15 days', item: 'CERT-ISCC-2024-045', date: '2024-12-12', resolved: false },
+    { id: 4, type: 'missing', icon: 'document', title: 'Missing Document', description: 'Weighbridge ticket not uploaded for delivery', item: 'DEL-2024-1892', date: '2024-12-11', resolved: false },
+    { id: 5, type: 'missing', icon: 'document', title: 'Missing COA', description: 'Certificate of Analysis pending from supplier', item: 'BATCH-PET-2024-158', date: '2024-12-10', resolved: false },
+    { id: 6, type: 'warning', icon: 'alertTriangle', title: 'Data Inconsistency', description: 'Input/output weight variance exceeds 3% threshold', item: 'FLOW-2024-0234', date: '2024-12-09', resolved: true },
+    { id: 7, type: 'critical', icon: 'xCircle', title: 'Accreditation Expired', description: 'Reprocessor accreditation needs renewal', item: 'SUPP-Biffa-001', date: '2024-12-08', resolved: true },
+    { id: 8, type: 'missing', icon: 'document', title: 'Missing Signature', description: 'Authorization signature required on COA', item: 'COA-2024-0894', date: '2024-12-07', resolved: false },
+  ];
+
+  const filteredErrors = errorsData.filter(e => {
+    if (filter !== 'all' && e.type !== filter) return false;
+    if (statusFilter === 'unresolved' && e.resolved) return false;
+    if (statusFilter === 'resolved' && !e.resolved) return false;
+    return true;
+  });
+
+  const criticalCount = errorsData.filter(e => e.type === 'critical' && !e.resolved).length;
+  const warningCount = errorsData.filter(e => e.type === 'warning' && !e.resolved).length;
+  const missingCount = errorsData.filter(e => e.type === 'missing' && !e.resolved).length;
+  const totalUnresolved = errorsData.filter(e => !e.resolved).length;
+
+  return (
+    <div>
+      {/* Header */}
+      <Card style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: tokens.radius.lg, background: tokens.colors.action.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name="alertTriangle" size={26} color={tokens.colors.action.main} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 700, color: tokens.colors.text.primary, margin: 0 }}>{t.errors.title}</h2>
+            <p style={{ fontSize: '13px', color: tokens.colors.text.muted, margin: '2px 0 0' }}>{t.errors.subtitle}</p>
+          </div>
+          <Button variant="secondary" icon="download">{t.actions.export}</Button>
+        </div>
+
+        {/* Summary Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+          <div style={{ background: tokens.colors.cream[300], borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center', cursor: 'pointer', border: filter === 'all' ? `2px solid ${tokens.colors.brand[600]}` : '2px solid transparent' }} onClick={() => setFilter('all')}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.errors.totalErrors}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.text.primary }}>{totalUnresolved}</div>
+          </div>
+          <div style={{ background: tokens.colors.action.light, borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center', cursor: 'pointer', border: filter === 'critical' ? `2px solid ${tokens.colors.action.main}` : '2px solid transparent' }} onClick={() => setFilter('critical')}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.errors.criticalErrors}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.action.main }}>{criticalCount}</div>
+          </div>
+          <div style={{ background: tokens.colors.neutral.light, borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center', cursor: 'pointer', border: filter === 'warning' ? `2px solid ${tokens.colors.neutral.main}` : '2px solid transparent' }} onClick={() => setFilter('warning')}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.errors.warnings}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.neutral.main }}>{warningCount}</div>
+          </div>
+          <div style={{ background: tokens.colors.brand[600] + '15', borderRadius: tokens.radius.md, padding: '16px', textAlign: 'center', cursor: 'pointer', border: filter === 'missing' ? `2px solid ${tokens.colors.brand[600]}` : '2px solid transparent' }} onClick={() => setFilter('missing')}>
+            <div style={{ fontSize: '10px', color: tokens.colors.text.muted, textTransform: 'uppercase', marginBottom: '6px' }}>{t.errors.missingDocs}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: tokens.colors.brand[600] }}>{missingCount}</div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Filters */}
+      <Card style={{ marginBottom: '20px', padding: '14px 20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: tokens.colors.text.secondary }}>{t.errors.filterByStatus}:</span>
+            {(['all', 'unresolved', 'resolved'] as const).map(s => (
+              <button key={s} onClick={() => setStatusFilter(s)} style={{
+                padding: '6px 12px', border: 'none', borderRadius: tokens.radius.sm, fontSize: '12px', fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+                background: statusFilter === s ? tokens.colors.brand[600] : tokens.colors.cream[300],
+                color: statusFilter === s ? '#FFF' : tokens.colors.text.secondary,
+              }}>
+                {t.errors[s]}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Card>
+
+      {/* Errors List */}
+      <Card>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {filteredErrors.map(error => (
+            <div key={error.id} style={{
+              display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 16px',
+              background: error.resolved ? tokens.colors.cream[200] : error.type === 'critical' ? tokens.colors.action.light : error.type === 'warning' ? tokens.colors.neutral.light : tokens.colors.brand[600] + '10',
+              borderRadius: tokens.radius.md,
+              borderLeft: `4px solid ${error.type === 'critical' ? tokens.colors.action.main : error.type === 'warning' ? tokens.colors.neutral.main : tokens.colors.brand[600]}`,
+              opacity: error.resolved ? 0.6 : 1,
+            }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: tokens.radius.md, background: error.type === 'critical' ? tokens.colors.action.main : error.type === 'warning' ? tokens.colors.neutral.main : tokens.colors.brand[600], display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name={error.icon} size={18} color="#FFF" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 600, color: tokens.colors.text.primary }}>{error.title}</span>
+                  {error.resolved && <Badge variant="success">{t.errors.resolved}</Badge>}
+                </div>
+                <div style={{ fontSize: '12px', color: tokens.colors.text.secondary, marginBottom: '4px' }}>{error.description}</div>
+                <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: tokens.colors.text.muted }}>
+                  <span><strong>{t.errors.affectedItem}:</strong> {error.item}</span>
+                  <span><strong>{t.errors.detectedDate}:</strong> {error.date}</span>
+                </div>
+              </div>
+              {!error.resolved && (
+                <Button variant="primary" size="sm">{t.errors.markResolved}</Button>
+              )}
+            </div>
+          ))}
+          {filteredErrors.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '40px', color: tokens.colors.text.muted }}>
+              <Icon name="checkCircle" size={48} color={tokens.colors.success.main} />
+              <p style={{ marginTop: '12px', fontSize: '14px' }}>No errors matching the selected filters</p>
+            </div>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// ============================================================================
 // SIDEBAR
 // ============================================================================
 
 const Sidebar: FC<{ industry: Industry; persona: Persona; collapsed: boolean; activeTab: string; onTabChange: (tab: string) => void }> = ({ industry, persona, collapsed, activeTab, onTabChange }) => {
+  const { t } = useLanguage();
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'home' },
-    { id: 'processconfig', label: 'Configuration Processus', icon: 'workflow' },
+    { id: 'dashboard', label: t.nav.dashboard, icon: 'home' },
+    { id: 'processconfig', label: t.nav.processConfig, icon: 'workflow' },
     { id: 'flows', label: `${industry.terminology.input}s`, icon: 'flows' },
-    { id: 'documents', label: 'Documents', icon: 'document' },
-    { id: 'certificates', label: industry.terminology.certificate, icon: 'certificate' },
-    { id: 'massbalance', label: 'Mass Balance', icon: 'scale' },
-    { id: 'reports', label: 'Reports', icon: 'reports' },
+    { id: 'documents', label: t.nav.documents, icon: 'document' },
+    { id: 'prn', label: t.nav.prn, icon: 'certificate' },
+    { id: 'coa', label: t.nav.coa, icon: 'document' },
+    { id: 'errors', label: t.nav.errors, icon: 'alertTriangle' },
+    { id: 'certificates', label: t.nav.certificates, icon: 'trophy' },
+    { id: 'massbalance', label: t.nav.massBalance, icon: 'scale' },
+    { id: 'reports', label: t.nav.reports, icon: 'reports' },
   ];
   
   return (
@@ -2755,7 +3379,26 @@ const App: FC = () => {
           {activeTab === 'dashboard' && (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${industry.kpis.length}, 1fr)`, gap: '16px', marginBottom: '24px' }}>
-                {industry.kpis.map(kpi => <KPICard key={kpi.key} label={kpi.label} value={kpiValues[kpi.key] || 0} unit={kpi.unit} target={kpi.target} industry={industry} />)}
+                {industry.kpis.map(kpi => {
+                  // Map KPI keys to navigation targets
+                  const kpiNavigation: Record<string, { tab: string; label: string }> = {
+                    prnCoverage: { tab: 'prn', label: t.nav.prn },
+                    coaErrorRate: { tab: 'coa', label: t.nav.coa },
+                  };
+                  const nav = kpiNavigation[kpi.key];
+                  return (
+                    <KPICard
+                      key={kpi.key}
+                      label={kpi.label}
+                      value={kpiValues[kpi.key] || 0}
+                      unit={kpi.unit}
+                      target={kpi.target}
+                      industry={industry}
+                      onClick={nav ? () => setActiveTab(nav.tab) : undefined}
+                      linkLabel={nav ? nav.label : undefined}
+                    />
+                  );
+                })}
               </div>
               <div style={{ marginBottom: '24px' }}><ProcessPipeline industry={industry} flows={mockData.flows} /></div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
@@ -2769,6 +3412,9 @@ const App: FC = () => {
           {activeTab === 'processconfig' && <ProcessFlowEditor industry={industry} />}
           {activeTab === 'flows' && <MaterialFlowsTable industry={industry} flows={mockData.flows} />}
           {activeTab === 'documents' && <DocumentProcessingView industry={industry} flows={mockData.flows} />}
+          {activeTab === 'prn' && <PRNManagementView industry={industry} />}
+          {activeTab === 'coa' && <COAVerificationView industry={industry} />}
+          {activeTab === 'errors' && <ErrorsTrackingView industry={industry} />}
           {activeTab === 'certificates' && <CertificateTracking industry={industry} />}
           {activeTab === 'massbalance' && <MassBalanceView industry={industry} />}
           {activeTab === 'reports' && (
