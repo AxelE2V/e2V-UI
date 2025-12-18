@@ -2618,6 +2618,7 @@ const ProcessFlowEditor: FC<{ industry: Industry; onNavigate?: (tab: string) => 
   const [processes, setProcesses] = useState<ProcessDefinition[]>(getIndustryProcesses(industry.id));
   const [expandedProcess, setExpandedProcess] = useState<string | null>(processes[0]?.id || null);
   const [showAddProcess, setShowAddProcess] = useState(false);
+  const [selectedStep, setSelectedStep] = useState<ProcessStepConfig | null>(null);
 
   // Update processes when industry changes
   React.useEffect(() => {
@@ -2629,6 +2630,38 @@ const ProcessFlowEditor: FC<{ industry: Industry; onNavigate?: (tab: string) => 
   const handleNavigateToProcess = (process: ProcessDefinition) => {
     if (process.navTab && onNavigate) {
       onNavigate(process.navTab);
+    }
+  };
+
+  // Convert simple step to ProcessStepConfig for the modal
+  const handleStepDoubleClick = (step: ProcessDefinition['steps'][0], processId: string) => {
+    const stepConfig: ProcessStepConfig = {
+      id: step.id as ProcessStep,
+      label: step.label,
+      icon: step.icon,
+      description: step.description,
+      evidenceRequirements: [],
+      outputs: [],
+      predecessors: [],
+      estimatedDuration: '',
+      responsibleRole: '',
+    };
+    setSelectedStep(stepConfig);
+  };
+
+  // Save step configuration
+  const handleStepSave = (updatedStep: ProcessStepConfig) => {
+    // Here you would update the process with the new step configuration
+    // For now, we just close the modal
+    setSelectedStep(null);
+  };
+
+  // Get status color using eco2Veritas design system
+  const getStatusColor = (status: 'verified' | 'pending' | 'flagged') => {
+    switch (status) {
+      case 'verified': return { bg: tokens.colors.success.light, border: tokens.colors.success.main, icon: tokens.colors.success.main };
+      case 'pending': return { bg: tokens.colors.neutral.light, border: tokens.colors.neutral.main, icon: tokens.colors.neutral.main };
+      case 'flagged': return { bg: tokens.colors.action.light, border: tokens.colors.action.main, icon: tokens.colors.action.main };
     }
   };
 
@@ -2697,41 +2730,73 @@ const ProcessFlowEditor: FC<{ industry: Industry; onNavigate?: (tab: string) => 
           {/* Expanded Process Steps */}
           {expandedProcess === process.id && (
             <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: `1px solid ${tokens.colors.cream[400]}` }}>
+              {/* Info Banner */}
+              <div style={{
+                background: tokens.colors.info.light,
+                borderRadius: tokens.radius.md,
+                padding: '10px 14px',
+                marginBottom: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                border: `1px solid ${tokens.colors.info.main}20`
+              }}>
+                <Icon name="edit" size={16} color={tokens.colors.info.main} />
+                <span style={{ fontSize: '12px', color: tokens.colors.text.secondary }}>
+                  <strong>Double-click</strong> on a step to configure evidence requirements and verification criteria
+                </span>
+              </div>
+
               <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', padding: '10px 0' }}>
-                {process.steps.map((step, idx) => (
-                  <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{
-                      minWidth: '140px',
-                      background: step.status === 'verified' ? tokens.colors.success.light :
-                                 step.status === 'pending' ? tokens.colors.neutral.light : tokens.colors.action.light,
-                      borderRadius: tokens.radius.md,
-                      padding: '14px 12px',
-                      textAlign: 'center',
-                      border: `2px solid ${step.status === 'verified' ? tokens.colors.success.main :
-                              step.status === 'pending' ? tokens.colors.neutral.main : tokens.colors.action.main}`,
-                    }}>
-                      <div style={{
-                        width: '36px', height: '36px', borderRadius: '50%',
-                        background: step.status === 'verified' ? tokens.colors.success.main :
-                                   step.status === 'pending' ? tokens.colors.neutral.main : tokens.colors.action.main,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px'
-                      }}>
-                        <Icon name={step.icon} size={18} color="#FFF" />
+                {process.steps.map((step, idx) => {
+                  const colors = getStatusColor(step.status);
+                  return (
+                    <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
+                      <div
+                        onDoubleClick={() => handleStepDoubleClick(step, process.id)}
+                        style={{
+                          minWidth: '150px',
+                          background: colors.bg,
+                          borderRadius: tokens.radius.md,
+                          padding: '16px 14px',
+                          textAlign: 'center',
+                          border: `2px solid ${colors.border}`,
+                          cursor: 'pointer',
+                          transition: 'all 200ms ease',
+                          position: 'relative',
+                        }}
+                      >
+                        {/* Double-click indicator */}
+                        <div style={{
+                          position: 'absolute', top: '6px', right: '6px',
+                          background: 'rgba(255,255,255,0.9)', borderRadius: tokens.radius.sm,
+                          padding: '2px 6px', fontSize: '9px', color: tokens.colors.text.muted,
+                          display: 'flex', alignItems: 'center', gap: '3px',
+                        }}>
+                          <Icon name="edit" size={8} /> Configure
+                        </div>
+                        <div style={{
+                          width: '40px', height: '40px', borderRadius: '50%',
+                          background: colors.icon,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px'
+                        }}>
+                          <Icon name={step.icon} size={20} color="#FFF" />
+                        </div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: tokens.colors.text.primary, marginBottom: '6px' }}>
+                          {step.label}
+                        </div>
+                        <div style={{ fontSize: '10px', color: tokens.colors.text.muted, lineHeight: 1.4 }}>
+                          {step.description}
+                        </div>
                       </div>
-                      <div style={{ fontSize: '11px', fontWeight: 600, color: tokens.colors.text.primary, marginBottom: '4px' }}>
-                        {step.label}
-                      </div>
-                      <div style={{ fontSize: '10px', color: tokens.colors.text.muted, lineHeight: 1.3 }}>
-                        {step.description}
-                      </div>
+                      {idx < process.steps.length - 1 && (
+                        <div style={{ padding: '0 6px' }}>
+                          <Icon name="arrowRight" size={18} color={tokens.colors.text.muted} />
+                        </div>
+                      )}
                     </div>
-                    {idx < process.steps.length - 1 && (
-                      <div style={{ padding: '0 4px' }}>
-                        <Icon name="arrowRight" size={16} color={tokens.colors.text.muted} />
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Process Stats */}
@@ -2783,6 +2848,16 @@ const ProcessFlowEditor: FC<{ industry: Industry; onNavigate?: (tab: string) => 
             </div>
           </div>
         </div>
+      )}
+
+      {/* Step Configuration Modal */}
+      {selectedStep && (
+        <StepConfigurationModal
+          step={selectedStep}
+          industry={industry}
+          onClose={() => setSelectedStep(null)}
+          onSave={handleStepSave}
+        />
       )}
     </div>
   );
