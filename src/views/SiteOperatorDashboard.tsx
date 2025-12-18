@@ -1,6 +1,7 @@
 import React, { type FC } from 'react';
 import { tokens } from '../tokens';
 import type { Industry } from '../types';
+import { Icon } from '../components/ui/Icon';
 
 // Simple inline components
 const Card: FC<{ children: React.ReactNode; style?: React.CSSProperties; onClick?: () => void }> = ({ children, style, onClick }) => (
@@ -65,25 +66,25 @@ export const SiteOperatorDashboard: FC<SiteOperatorDashboardProps> = ({
   // Quick actions
   const quickActions = [
     {
-      icon: '📄',
+      icon: 'fileScan',
       label: lang === 'fr' ? 'Scanner document' : 'Scan Document',
       color: tokens.colors.brand[600],
       action: 'documents',
     },
     {
-      icon: '📷',
+      icon: 'camera',
       label: lang === 'fr' ? 'Prendre photo' : 'Take Photo',
       color: tokens.colors.success.main,
       action: 'documents',
     },
     {
-      icon: '⚖️',
+      icon: 'weighScale',
       label: lang === 'fr' ? 'Nouvelle pesée' : 'New Weighing',
       color: '#8B5CF6',
       action: 'flows',
     },
     {
-      icon: '✍️',
+      icon: 'pen',
       label: lang === 'fr' ? 'Signature' : 'Signature',
       color: tokens.colors.action.main,
       action: 'documents',
@@ -146,10 +147,9 @@ export const SiteOperatorDashboard: FC<SiteOperatorDashboardProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '24px',
               marginBottom: '12px',
             }}>
-              {action.icon}
+              <Icon name={action.icon} size={24} color={action.color} />
             </div>
             <span style={{ fontSize: '13px', fontWeight: 600, color: tokens.colors.text.primary, textAlign: 'center' }}>
               {action.label}
@@ -256,9 +256,12 @@ export const SiteOperatorDashboard: FC<SiteOperatorDashboardProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '14px',
                   }}>
-                    {doc.name.endsWith('.pdf') ? '📄' : '📷'}
+                    <Icon
+                      name={doc.name.endsWith('.pdf') ? 'document' : 'fileImage'}
+                      size={18}
+                      color={tokens.colors.text.secondary}
+                    />
                   </div>
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: tokens.colors.text.primary }}>{doc.name}</div>
