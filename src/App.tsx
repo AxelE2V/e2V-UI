@@ -151,19 +151,44 @@ interface Persona {
 }
 
 // ============================================================================
-// DESIGN TOKENS
+// DESIGN TOKENS - eco2Veritas Brand Colors
+// ============================================================================
+// Simplified color system:
+// - ACTION: Red (#C44D4D) - Non-conformant, requires immediate action
+// - SUCCESS: Green (#2D7A5E) - Completed, verified, conformant
+// - NEUTRAL: Gray - Everything else (discreet)
+// - BRAND: Deep blue sidebar + Cream background
 // ============================================================================
 
 const tokens = {
   colors: {
-    navy: { 900: '#0A1628', 800: '#0F2137', 700: '#152A46', 600: '#1B3A5C', 500: '#2A4A7A' },
+    // Brand - Deep blue for eco2Veritas identity
+    brand: {
+      900: '#0A1628',
+      800: '#0F2137',
+      700: '#152A46',
+      600: '#1B3A5C',  // Primary deep blue
+      500: '#2A4A7A',
+      400: '#3D6098',
+    },
+    // Background - Cream tones for readability
     cream: { 50: '#FFFEF9', 100: '#FDF9F3', 200: '#F8F3EA', 300: '#F2EBE0', 400: '#E8DFD0', 500: '#D4C8B5' },
-    accent: { main: '#D35D3A', light: '#E8927A', pale: '#FEF3EB' },
+    // Primary action button color
+    accent: { main: '#1B3A5C', light: '#3D6098', pale: '#E8F0F8' },
+    // Text colors
     text: { primary: '#1A2332', secondary: '#4A5568', muted: '#718096', inverse: '#FFFFFF' },
+    // STATUS: Completed/Verified/Conformant (satisfaction)
     success: { main: '#2D7A5E', light: '#E5F2EC', dark: '#1D5A42' },
-    warning: { main: '#C48B2E', light: '#FDF5E1' },
-    danger: { main: '#C44D4D', light: '#FDECEC' },
-    info: { main: '#3A6B96', light: '#E8F0F8' },
+    // STATUS: Action required (non-conformant OR pending action needed)
+    action: { main: '#C44D4D', light: '#FDECEC', dark: '#A33D3D' },
+    // Aliases for backward compatibility
+    warning: { main: '#C44D4D', light: '#FDECEC' },  // Now uses action color
+    danger: { main: '#C44D4D', light: '#FDECEC' },   // Now uses action color
+    // Neutral/informational (discreet)
+    neutral: { main: '#718096', light: '#EDF2F7', dark: '#4A5568' },
+    info: { main: '#718096', light: '#EDF2F7' },     // Now uses neutral
+    // Legacy navy alias
+    navy: { 900: '#0A1628', 800: '#0F2137', 700: '#152A46', 600: '#1B3A5C', 500: '#2A4A7A' },
   },
   radius: { sm: '6px', md: '8px', lg: '12px', xl: '14px', '2xl': '16px', full: '9999px' },
   shadow: { sm: '0 1px 3px rgba(10,22,40,0.08)', md: '0 4px 12px rgba(10,22,40,0.10)', lg: '0 8px 24px rgba(10,22,40,0.14)' },
@@ -1000,9 +1025,9 @@ const Card: FC<{ children: ReactNode; padding?: 'sm' | 'md' | 'lg'; style?: CSSP
 
 const Button: FC<{ children: ReactNode; variant?: 'primary' | 'secondary' | 'ghost'; size?: 'sm' | 'md'; icon?: string; onClick?: () => void; style?: CSSProperties }> = ({ children, variant = 'primary', size = 'md', icon, onClick, style }) => {
   const variantStyles: Record<string, CSSProperties> = {
-    primary: { background: tokens.colors.accent.main, color: '#FFF', border: 'none' },
+    primary: { background: tokens.colors.brand[600], color: '#FFF', border: 'none' },
     secondary: { background: tokens.colors.cream[200], color: tokens.colors.text.primary, border: `1px solid ${tokens.colors.cream[500]}` },
-    ghost: { background: 'transparent', color: tokens.colors.navy[600], border: 'none' },
+    ghost: { background: 'transparent', color: tokens.colors.brand[600], border: 'none' },
   };
   const sizeStyles: Record<string, CSSProperties> = { sm: { padding: '6px 12px', fontSize: '12px' }, md: { padding: '8px 16px', fontSize: '13px' } };
   
@@ -1014,24 +1039,31 @@ const Button: FC<{ children: ReactNode; variant?: 'primary' | 'secondary' | 'gho
   );
 };
 
-const Badge: FC<{ variant?: 'success' | 'warning' | 'danger' | 'neutral' | 'info'; icon?: string; children: ReactNode }> = ({ variant = 'neutral', icon, children }) => {
+const Badge: FC<{ variant?: 'success' | 'action' | 'neutral' | 'warning' | 'danger' | 'info'; icon?: string; children: ReactNode }> = ({ variant = 'neutral', icon, children }) => {
+  // Simplified 3-color system: success (green), action (red), neutral (gray)
   const styles: Record<string, { bg: string; color: string }> = {
     success: { bg: tokens.colors.success.light, color: tokens.colors.success.main },
-    warning: { bg: tokens.colors.warning.light, color: tokens.colors.warning.main },
-    danger: { bg: tokens.colors.danger.light, color: tokens.colors.danger.main },
-    neutral: { bg: tokens.colors.cream[400], color: tokens.colors.text.secondary },
-    info: { bg: tokens.colors.info.light, color: tokens.colors.info.main },
+    action: { bg: tokens.colors.action.light, color: tokens.colors.action.main },
+    neutral: { bg: tokens.colors.neutral.light, color: tokens.colors.neutral.main },
+    // Legacy variants (now map to simplified system)
+    warning: { bg: tokens.colors.action.light, color: tokens.colors.action.main },
+    danger: { bg: tokens.colors.action.light, color: tokens.colors.action.main },
+    info: { bg: tokens.colors.neutral.light, color: tokens.colors.neutral.main },
   };
   const s = styles[variant];
   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: tokens.radius.full, fontSize: '11px', fontWeight: 600, background: s.bg, color: s.color }}>{icon && <Icon name={icon} size={12} />}{children}</span>;
 };
 
 const StatusBadge: FC<{ status: DocumentStatus }> = ({ status }) => {
-  const config: Record<DocumentStatus, { variant: 'success' | 'warning' | 'danger' | 'neutral'; icon: string; label: string }> = {
-    verified: { variant: 'success', icon: 'checkCircle', label: 'Verified' },
-    pending: { variant: 'warning', icon: 'clock', label: 'Pending' },
-    flagged: { variant: 'danger', icon: 'alertTriangle', label: 'Flagged' },
-    missing: { variant: 'neutral', icon: 'xCircle', label: 'Missing' },
+  // Simplified 3-state color system:
+  // - success (green): completed, verified, conformant
+  // - action (red): requires action (flagged, missing, non-conformant)
+  // - neutral (gray): in progress, pending (informational, discreet)
+  const config: Record<DocumentStatus, { variant: 'success' | 'action' | 'neutral'; icon: string; label: string }> = {
+    verified: { variant: 'success', icon: 'checkCircle', label: 'Vérifié' },
+    pending: { variant: 'neutral', icon: 'clock', label: 'En attente' },
+    flagged: { variant: 'action', icon: 'alertTriangle', label: 'Action requise' },
+    missing: { variant: 'action', icon: 'xCircle', label: 'Manquant' },
   };
   const c = config[status];
   return <Badge variant={c.variant} icon={c.icon}>{c.label}</Badge>;
@@ -2170,7 +2202,7 @@ const Sidebar: FC<{ industry: Industry; persona: Persona; collapsed: boolean; ac
   return (
     <aside style={{
       width: collapsed ? '72px' : '260px',
-      background: `linear-gradient(180deg, ${industry.gradientFrom} 0%, ${industry.gradientTo} 100%)`,
+      background: `linear-gradient(180deg, ${tokens.colors.brand[800]} 0%, ${tokens.colors.brand[600]} 100%)`,
       padding: '20px 12px',
       display: 'flex',
       flexDirection: 'column',
