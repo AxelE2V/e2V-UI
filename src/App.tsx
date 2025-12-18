@@ -3967,6 +3967,79 @@ const IndustrySelector: FC<{ selected: IndustryId; onChange: (id: IndustryId) =>
 };
 
 // ============================================================================
+// PERSONA SELECTOR (Demo)
+// ============================================================================
+
+const PersonaSelector: FC<{ selected: PersonaId; onChange: (id: PersonaId) => void }> = ({ selected, onChange }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const selectedPersona = personas[selected];
+  const { lang } = useLanguage();
+
+  const personaLabels: Record<PersonaId, { fr: string; en: string }> = {
+    compliance_officer: { fr: 'Responsable Conformité', en: 'Compliance Officer' },
+    operations_manager: { fr: 'Responsable Opérations', en: 'Operations Manager' },
+    site_operator: { fr: 'Opérateur Site', en: 'Site Operator' },
+  };
+
+  return (
+    <div style={{ position: 'fixed', bottom: '20px', right: '180px', zIndex: 200 }}>
+      {/* Collapsed state - small button */}
+      {!isExpanded && (
+        <button
+          onClick={() => setIsExpanded(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '10px 14px', border: 'none', borderRadius: tokens.radius.lg,
+            background: tokens.colors.brand[600], color: '#FFF',
+            cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: 600,
+            boxShadow: tokens.shadow.lg,
+          }}
+        >
+          <Icon name={selectedPersona.icon} size={16} color="#FFF" />
+          <span>{lang === 'fr' ? 'Rôle' : 'Role'}</span>
+          <Icon name="chevronUp" size={14} color="#FFF" />
+        </button>
+      )}
+
+      {/* Expanded state - full selector */}
+      {isExpanded && (
+        <div style={{ background: tokens.colors.cream[100], borderRadius: tokens.radius.xl, padding: '16px', boxShadow: tokens.shadow.lg, border: `1px solid ${tokens.colors.cream[400]}`, minWidth: '220px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: tokens.colors.text.muted, textTransform: 'uppercase' }}>
+              {lang === 'fr' ? 'Demo: Changer de rôle' : 'Demo: Switch Role'}
+            </div>
+            <button
+              onClick={() => setIsExpanded(false)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+            >
+              <Icon name="chevronDown" size={14} color={tokens.colors.text.muted} />
+            </button>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {Object.values(personas).map(p => (
+              <button key={p.id} onClick={() => { onChange(p.id); setIsExpanded(false); }} style={{
+                display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', border: 'none', borderRadius: tokens.radius.md, cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: 500,
+                background: selected === p.id ? tokens.colors.brand[600] : tokens.colors.cream[300],
+                color: selected === p.id ? '#FFF' : tokens.colors.text.secondary,
+                textAlign: 'left',
+              }}>
+                <Icon name={p.icon} size={18} color={selected === p.id ? '#FFF' : tokens.colors.text.muted} />
+                <div>
+                  <div style={{ fontWeight: 600 }}>{personaLabels[p.id][lang]}</div>
+                  <div style={{ fontSize: '10px', opacity: 0.8, marginTop: '2px' }}>
+                    {p.focus.slice(0, 2).join(', ')}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============================================================================
 // AI AGENT (Claude Integration)
 // ============================================================================
 
@@ -3984,9 +4057,10 @@ interface AIAgentProps {
   activeTab: string;
   onNavigate: (tab: string) => void;
   lang: Language;
+  sidebarCollapsed: boolean;
 }
 
-const AIAgent: FC<AIAgentProps> = ({ industry, persona, activeTab, onNavigate, lang }) => {
+const AIAgent: FC<AIAgentProps> = ({ industry, persona, activeTab, onNavigate, lang, sidebarCollapsed }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -4238,7 +4312,7 @@ Which aspect interests you?`;
       ];
 
   return (
-    <div style={{ position: 'fixed', bottom: '20px', left: '280px', zIndex: 1000 }}>
+    <div style={{ position: 'fixed', bottom: '20px', left: sidebarCollapsed ? '92px' : '280px', zIndex: 1000, transition: 'left 200ms ease' }}>
       {/* Chat Window */}
       {isOpen && (
         <div style={{
@@ -4510,7 +4584,7 @@ Which aspect interests you?`;
 
 const App: FC = () => {
   const [industryId, setIndustryId] = useState<IndustryId>('chemical_recycling');
-  const [personaId] = useState<PersonaId>('compliance_officer');
+  const [personaId, setPersonaId] = useState<PersonaId>('compliance_officer');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [lang, setLang] = useState<Language>('en'); // Default to English
@@ -4617,6 +4691,7 @@ const App: FC = () => {
         </div>
       </main>
 
+      <PersonaSelector selected={personaId} onChange={setPersonaId} />
       <IndustrySelector selected={industryId} onChange={setIndustryId} />
       <AIAgent
         industry={industry}
@@ -4624,6 +4699,7 @@ const App: FC = () => {
         activeTab={activeTab}
         onNavigate={setActiveTab}
         lang={lang}
+        sidebarCollapsed={sidebarCollapsed}
       />
     </div>
     </LanguageContext.Provider>
