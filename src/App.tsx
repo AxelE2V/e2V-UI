@@ -6,7 +6,337 @@
 // Process Configuration System with Evidence & Verification Management
 // ============================================================================
 
-import React, { useState, useMemo, type ReactNode, type FC, type CSSProperties } from 'react';
+import React, { useState, useMemo, createContext, useContext, type ReactNode, type FC, type CSSProperties } from 'react';
+
+// ============================================================================
+// INTERNATIONALIZATION (i18n)
+// ============================================================================
+
+type Language = 'en' | 'fr';
+
+interface Translations {
+  // Navigation
+  nav: {
+    dashboard: string;
+    processConfig: string;
+    documents: string;
+    certificates: string;
+    massBalance: string;
+    reports: string;
+    settings: string;
+  };
+  // Status labels
+  status: {
+    verified: string;
+    pending: string;
+    flagged: string;
+    missing: string;
+    valid: string;
+    expiring: string;
+    expired: string;
+    draft: string;
+    onTrack: string;
+    belowTarget: string;
+    configured: string;
+    notConfigured: string;
+  };
+  // Actions
+  actions: {
+    export: string;
+    import: string;
+    upload: string;
+    download: string;
+    save: string;
+    cancel: string;
+    close: string;
+    add: string;
+    remove: string;
+    edit: string;
+    view: string;
+    generate: string;
+    addEvidence: string;
+    addCriterion: string;
+  };
+  // Common labels
+  common: {
+    date: string;
+    source: string;
+    material: string;
+    quantity: string;
+    unit: string;
+    status: string;
+    type: string;
+    reference: string;
+    description: string;
+    name: string;
+    required: string;
+    optional: string;
+    yes: string;
+    no: string;
+    target: string;
+    total: string;
+    input: string;
+    output: string;
+    waste: string;
+    yield: string;
+    balance: string;
+    period: string;
+    linkedFlows: string;
+    issuedDate: string;
+    expiryDate: string;
+    confidence: string;
+    documents: string;
+    step: string;
+    evidence: string;
+    rules: string;
+    severity: string;
+    error: string;
+    warning: string;
+    info: string;
+  };
+  // Sections
+  sections: {
+    processConfiguration: string;
+    processConfigSubtitle: string;
+    modified: string;
+    doubleClickInfo: string;
+    evidenceSummary: string;
+    verificationCriteria: string;
+    extractedFields: string;
+    documentProcessing: string;
+    certificateTracking: string;
+    massBalanceTracking: string;
+    materialFlows: string;
+    reportGenerator: string;
+    reportGeneratorDesc: string;
+  };
+  // Demo
+  demo: {
+    switchIndustry: string;
+  };
+  // Language
+  language: {
+    select: string;
+    english: string;
+    french: string;
+  };
+}
+
+const translations: Record<Language, Translations> = {
+  en: {
+    nav: {
+      dashboard: 'Dashboard',
+      processConfig: 'Process Configuration',
+      documents: 'Documents',
+      certificates: 'Certificates',
+      massBalance: 'Mass Balance',
+      reports: 'Reports',
+      settings: 'Settings',
+    },
+    status: {
+      verified: 'Verified',
+      pending: 'Pending',
+      flagged: 'Action Required',
+      missing: 'Missing',
+      valid: 'Valid',
+      expiring: 'Expiring Soon',
+      expired: 'Expired',
+      draft: 'Draft',
+      onTrack: 'On Track',
+      belowTarget: 'Below Target',
+      configured: 'configured',
+      notConfigured: 'Not configured',
+    },
+    actions: {
+      export: 'Export',
+      import: 'Import',
+      upload: 'Upload',
+      download: 'Download',
+      save: 'Save',
+      cancel: 'Cancel',
+      close: 'Close',
+      add: 'Add',
+      remove: 'Remove',
+      edit: 'Edit',
+      view: 'View',
+      generate: 'Generate',
+      addEvidence: 'Add Evidence',
+      addCriterion: 'Add Criterion',
+    },
+    common: {
+      date: 'Date',
+      source: 'Source',
+      material: 'Material',
+      quantity: 'Quantity',
+      unit: 'Unit',
+      status: 'Status',
+      type: 'Type',
+      reference: 'Reference',
+      description: 'Description',
+      name: 'Name',
+      required: 'Required',
+      optional: 'Optional',
+      yes: 'Yes',
+      no: 'No',
+      target: 'Target',
+      total: 'Total',
+      input: 'Input',
+      output: 'Output',
+      waste: 'Waste',
+      yield: 'Yield',
+      balance: 'Balance',
+      period: 'Period',
+      linkedFlows: 'Linked Flows',
+      issuedDate: 'Issued',
+      expiryDate: 'Expires',
+      confidence: 'Confidence',
+      documents: 'Documents',
+      step: 'Step',
+      evidence: 'Evidence',
+      rules: 'Rules',
+      severity: 'Severity',
+      error: 'Error',
+      warning: 'Warning',
+      info: 'Info',
+    },
+    sections: {
+      processConfiguration: 'Process Configuration',
+      processConfigSubtitle: 'Configure evidence requirements and verification criteria',
+      modified: 'Modified',
+      doubleClickInfo: 'Double-click on a step to configure evidence requirements and verification criteria',
+      evidenceSummary: 'EVIDENCE',
+      verificationCriteria: 'Verification Criteria',
+      extractedFields: 'Extracted Fields',
+      documentProcessing: 'Document Processing',
+      certificateTracking: 'Certificate Tracking',
+      massBalanceTracking: 'Mass Balance Tracking',
+      materialFlows: 'Material Flows',
+      reportGenerator: 'Report Generator',
+      reportGeneratorDesc: 'Generate compliance reports, certificates, and audit documentation',
+    },
+    demo: {
+      switchIndustry: 'Demo: Switch Industry',
+    },
+    language: {
+      select: 'Language',
+      english: 'English',
+      french: 'Français',
+    },
+  },
+  fr: {
+    nav: {
+      dashboard: 'Tableau de bord',
+      processConfig: 'Configuration Processus',
+      documents: 'Documents',
+      certificates: 'Certificats',
+      massBalance: 'Bilan matière',
+      reports: 'Rapports',
+      settings: 'Paramètres',
+    },
+    status: {
+      verified: 'Vérifié',
+      pending: 'En attente',
+      flagged: 'Action requise',
+      missing: 'Manquant',
+      valid: 'Valide',
+      expiring: 'Expire bientôt',
+      expired: 'Expiré',
+      draft: 'Brouillon',
+      onTrack: 'Dans les temps',
+      belowTarget: 'Sous l\'objectif',
+      configured: 'configurée(s)',
+      notConfigured: 'Non configuré',
+    },
+    actions: {
+      export: 'Exporter',
+      import: 'Importer',
+      upload: 'Téléverser',
+      download: 'Télécharger',
+      save: 'Enregistrer',
+      cancel: 'Annuler',
+      close: 'Fermer',
+      add: 'Ajouter',
+      remove: 'Supprimer',
+      edit: 'Modifier',
+      view: 'Voir',
+      generate: 'Générer',
+      addEvidence: 'Ajouter une preuve',
+      addCriterion: 'Ajouter un critère',
+    },
+    common: {
+      date: 'Date',
+      source: 'Source',
+      material: 'Matière',
+      quantity: 'Quantité',
+      unit: 'Unité',
+      status: 'Statut',
+      type: 'Type',
+      reference: 'Référence',
+      description: 'Description',
+      name: 'Nom',
+      required: 'Requis',
+      optional: 'Optionnel',
+      yes: 'Oui',
+      no: 'Non',
+      target: 'Objectif',
+      total: 'Total',
+      input: 'Entrée',
+      output: 'Sortie',
+      waste: 'Déchet',
+      yield: 'Rendement',
+      balance: 'Bilan',
+      period: 'Période',
+      linkedFlows: 'Flux liés',
+      issuedDate: 'Émis le',
+      expiryDate: 'Expire le',
+      confidence: 'Confiance',
+      documents: 'Documents',
+      step: 'Étape',
+      evidence: 'Preuves',
+      rules: 'Règles',
+      severity: 'Sévérité',
+      error: 'Erreur',
+      warning: 'Avertissement',
+      info: 'Info',
+    },
+    sections: {
+      processConfiguration: 'Configuration du processus',
+      processConfigSubtitle: 'Configurer les preuves requises et les critères de vérification',
+      modified: 'Modifié',
+      doubleClickInfo: 'Double-cliquez sur une étape pour configurer les preuves requises et les critères de vérification',
+      evidenceSummary: 'PREUVES',
+      verificationCriteria: 'Critères de vérification',
+      extractedFields: 'Champs extraits',
+      documentProcessing: 'Traitement des documents',
+      certificateTracking: 'Suivi des certificats',
+      massBalanceTracking: 'Suivi du bilan matière',
+      materialFlows: 'Flux de matières',
+      reportGenerator: 'Générateur de rapports',
+      reportGeneratorDesc: 'Générer des rapports de conformité, certificats et documentation d\'audit',
+    },
+    demo: {
+      switchIndustry: 'Démo: Changer d\'industrie',
+    },
+    language: {
+      select: 'Langue',
+      english: 'English',
+      french: 'Français',
+    },
+  },
+};
+
+// Language Context
+const LanguageContext = createContext<{
+  lang: Language;
+  setLang: (lang: Language) => void;
+  t: Translations;
+}>({
+  lang: 'en',
+  setLang: () => {},
+  t: translations.en,
+});
+
+const useLanguage = () => useContext(LanguageContext);
 
 // ============================================================================
 // TYPES
@@ -151,19 +481,44 @@ interface Persona {
 }
 
 // ============================================================================
-// DESIGN TOKENS
+// DESIGN TOKENS - eco2Veritas Brand Colors
+// ============================================================================
+// Simplified color system:
+// - ACTION: Red (#C44D4D) - Non-conformant, requires immediate action
+// - SUCCESS: Green (#2D7A5E) - Completed, verified, conformant
+// - NEUTRAL: Gray - Everything else (discreet)
+// - BRAND: Deep blue sidebar + Cream background
 // ============================================================================
 
 const tokens = {
   colors: {
-    navy: { 900: '#0A1628', 800: '#0F2137', 700: '#152A46', 600: '#1B3A5C', 500: '#2A4A7A' },
+    // Brand - Deep blue for eco2Veritas identity
+    brand: {
+      900: '#0A1628',
+      800: '#0F2137',
+      700: '#152A46',
+      600: '#1B3A5C',  // Primary deep blue
+      500: '#2A4A7A',
+      400: '#3D6098',
+    },
+    // Background - Cream tones for readability
     cream: { 50: '#FFFEF9', 100: '#FDF9F3', 200: '#F8F3EA', 300: '#F2EBE0', 400: '#E8DFD0', 500: '#D4C8B5' },
-    accent: { main: '#D35D3A', light: '#E8927A', pale: '#FEF3EB' },
+    // Primary action button color
+    accent: { main: '#1B3A5C', light: '#3D6098', pale: '#E8F0F8' },
+    // Text colors
     text: { primary: '#1A2332', secondary: '#4A5568', muted: '#718096', inverse: '#FFFFFF' },
+    // STATUS: Completed/Verified/Conformant (satisfaction)
     success: { main: '#2D7A5E', light: '#E5F2EC', dark: '#1D5A42' },
-    warning: { main: '#C48B2E', light: '#FDF5E1' },
-    danger: { main: '#C44D4D', light: '#FDECEC' },
-    info: { main: '#3A6B96', light: '#E8F0F8' },
+    // STATUS: Action required (non-conformant OR pending action needed)
+    action: { main: '#C44D4D', light: '#FDECEC', dark: '#A33D3D' },
+    // Aliases for backward compatibility
+    warning: { main: '#C44D4D', light: '#FDECEC' },  // Now uses action color
+    danger: { main: '#C44D4D', light: '#FDECEC' },   // Now uses action color
+    // Neutral/informational (discreet)
+    neutral: { main: '#718096', light: '#EDF2F7', dark: '#4A5568' },
+    info: { main: '#718096', light: '#EDF2F7' },     // Now uses neutral
+    // Legacy navy alias
+    navy: { 900: '#0A1628', 800: '#0F2137', 700: '#152A46', 600: '#1B3A5C', 500: '#2A4A7A' },
   },
   radius: { sm: '6px', md: '8px', lg: '12px', xl: '14px', '2xl': '16px', full: '9999px' },
   shadow: { sm: '0 1px 3px rgba(10,22,40,0.08)', md: '0 4px 12px rgba(10,22,40,0.10)', lg: '0 8px 24px rgba(10,22,40,0.14)' },
@@ -1000,9 +1355,9 @@ const Card: FC<{ children: ReactNode; padding?: 'sm' | 'md' | 'lg'; style?: CSSP
 
 const Button: FC<{ children: ReactNode; variant?: 'primary' | 'secondary' | 'ghost'; size?: 'sm' | 'md'; icon?: string; onClick?: () => void; style?: CSSProperties }> = ({ children, variant = 'primary', size = 'md', icon, onClick, style }) => {
   const variantStyles: Record<string, CSSProperties> = {
-    primary: { background: tokens.colors.accent.main, color: '#FFF', border: 'none' },
+    primary: { background: tokens.colors.brand[600], color: '#FFF', border: 'none' },
     secondary: { background: tokens.colors.cream[200], color: tokens.colors.text.primary, border: `1px solid ${tokens.colors.cream[500]}` },
-    ghost: { background: 'transparent', color: tokens.colors.navy[600], border: 'none' },
+    ghost: { background: 'transparent', color: tokens.colors.brand[600], border: 'none' },
   };
   const sizeStyles: Record<string, CSSProperties> = { sm: { padding: '6px 12px', fontSize: '12px' }, md: { padding: '8px 16px', fontSize: '13px' } };
   
@@ -1014,27 +1369,35 @@ const Button: FC<{ children: ReactNode; variant?: 'primary' | 'secondary' | 'gho
   );
 };
 
-const Badge: FC<{ variant?: 'success' | 'warning' | 'danger' | 'neutral' | 'info'; icon?: string; children: ReactNode }> = ({ variant = 'neutral', icon, children }) => {
+const Badge: FC<{ variant?: 'success' | 'action' | 'neutral' | 'warning' | 'danger' | 'info'; icon?: string; children: ReactNode }> = ({ variant = 'neutral', icon, children }) => {
+  // Simplified 3-color system: success (green), action (red), neutral (gray)
   const styles: Record<string, { bg: string; color: string }> = {
     success: { bg: tokens.colors.success.light, color: tokens.colors.success.main },
-    warning: { bg: tokens.colors.warning.light, color: tokens.colors.warning.main },
-    danger: { bg: tokens.colors.danger.light, color: tokens.colors.danger.main },
-    neutral: { bg: tokens.colors.cream[400], color: tokens.colors.text.secondary },
-    info: { bg: tokens.colors.info.light, color: tokens.colors.info.main },
+    action: { bg: tokens.colors.action.light, color: tokens.colors.action.main },
+    neutral: { bg: tokens.colors.neutral.light, color: tokens.colors.neutral.main },
+    // Legacy variants (now map to simplified system)
+    warning: { bg: tokens.colors.action.light, color: tokens.colors.action.main },
+    danger: { bg: tokens.colors.action.light, color: tokens.colors.action.main },
+    info: { bg: tokens.colors.neutral.light, color: tokens.colors.neutral.main },
   };
   const s = styles[variant];
   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: tokens.radius.full, fontSize: '11px', fontWeight: 600, background: s.bg, color: s.color }}>{icon && <Icon name={icon} size={12} />}{children}</span>;
 };
 
 const StatusBadge: FC<{ status: DocumentStatus }> = ({ status }) => {
-  const config: Record<DocumentStatus, { variant: 'success' | 'warning' | 'danger' | 'neutral'; icon: string; label: string }> = {
-    verified: { variant: 'success', icon: 'checkCircle', label: 'Verified' },
-    pending: { variant: 'warning', icon: 'clock', label: 'Pending' },
-    flagged: { variant: 'danger', icon: 'alertTriangle', label: 'Flagged' },
-    missing: { variant: 'neutral', icon: 'xCircle', label: 'Missing' },
+  const { t } = useLanguage();
+  // Simplified 3-state color system:
+  // - success (green): completed, verified, conformant
+  // - action (red): requires action (flagged, missing, non-conformant)
+  // - neutral (gray): in progress, pending (informational, discreet)
+  const config: Record<DocumentStatus, { variant: 'success' | 'action' | 'neutral'; icon: string; labelKey: keyof typeof t.status }> = {
+    verified: { variant: 'success', icon: 'checkCircle', labelKey: 'verified' },
+    pending: { variant: 'neutral', icon: 'clock', labelKey: 'pending' },
+    flagged: { variant: 'action', icon: 'alertTriangle', labelKey: 'flagged' },
+    missing: { variant: 'action', icon: 'xCircle', labelKey: 'missing' },
   };
   const c = config[status];
-  return <Badge variant={c.variant} icon={c.icon}>{c.label}</Badge>;
+  return <Badge variant={c.variant} icon={c.icon}>{t.status[c.labelKey]}</Badge>;
 };
 
 // ============================================================================
@@ -2170,7 +2533,7 @@ const Sidebar: FC<{ industry: Industry; persona: Persona; collapsed: boolean; ac
   return (
     <aside style={{
       width: collapsed ? '72px' : '260px',
-      background: `linear-gradient(180deg, ${industry.gradientFrom} 0%, ${industry.gradientTo} 100%)`,
+      background: `linear-gradient(180deg, ${tokens.colors.brand[800]} 0%, ${tokens.colors.brand[600]} 100%)`,
       padding: '20px 12px',
       display: 'flex',
       flexDirection: 'column',
@@ -2231,35 +2594,80 @@ const Sidebar: FC<{ industry: Industry; persona: Persona; collapsed: boolean; ac
 // HEADER
 // ============================================================================
 
-const Header: FC<{ industry: Industry; persona: Persona; onMenuClick: () => void }> = ({ industry, persona, onMenuClick }) => (
-  <header style={{ background: tokens.colors.cream[50], borderBottom: `1px solid ${tokens.colors.cream[400]}`, padding: '12px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 50 }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-      <button onClick={onMenuClick} style={{ background: 'none', border: 'none', cursor: 'pointer', color: tokens.colors.text.secondary, padding: '8px', borderRadius: tokens.radius.sm }}>
-        <Icon name="menu" size={20} />
+// Language Selector Component
+const LanguageSelector: FC = () => {
+  const { lang, setLang, t } = useLanguage();
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: tokens.colors.cream[300], borderRadius: tokens.radius.md, padding: '4px' }}>
+      <button
+        onClick={() => setLang('en')}
+        style={{
+          padding: '6px 10px',
+          border: 'none',
+          borderRadius: tokens.radius.sm,
+          background: lang === 'en' ? tokens.colors.brand[600] : 'transparent',
+          color: lang === 'en' ? '#FFF' : tokens.colors.text.secondary,
+          fontSize: '12px',
+          fontWeight: 600,
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}
+      >
+        EN
       </button>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: tokens.colors.cream[300], padding: '8px 14px', borderRadius: tokens.radius.md, width: '300px' }}>
-        <Icon name="search" size={16} color={tokens.colors.text.muted} />
-        <input placeholder={`Search ${industry.terminology.input.toLowerCase()}s, documents...`} style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', color: tokens.colors.text.primary, width: '100%', fontFamily: 'inherit' }} />
-      </div>
+      <button
+        onClick={() => setLang('fr')}
+        style={{
+          padding: '6px 10px',
+          border: 'none',
+          borderRadius: tokens.radius.sm,
+          background: lang === 'fr' ? tokens.colors.brand[600] : 'transparent',
+          color: lang === 'fr' ? '#FFF' : tokens.colors.text.secondary,
+          fontSize: '12px',
+          fontWeight: 600,
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+        }}
+      >
+        FR
+      </button>
     </div>
+  );
+};
 
-    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <div style={{ display: 'flex', gap: '6px' }}>
-        {industry.regulations.slice(0, 3).map(reg => <Badge key={reg} variant="success">{reg}</Badge>)}
-      </div>
-      <button style={{ position: 'relative', background: tokens.colors.cream[300], border: 'none', padding: '9px', borderRadius: tokens.radius.md, cursor: 'pointer' }}>
-        <Icon name="bell" size={18} color={tokens.colors.text.secondary} />
-        <span style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', borderRadius: '50%', background: tokens.colors.danger.main }} />
-      </button>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 12px 5px 5px', background: tokens.colors.cream[300], borderRadius: tokens.radius.full }}>
-        <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: industry.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name={persona.icon} size={16} color="#FFF" />
+const Header: FC<{ industry: Industry; persona: Persona; onMenuClick: () => void }> = ({ industry, persona, onMenuClick }) => {
+  const { t } = useLanguage();
+  return (
+    <header style={{ background: tokens.colors.cream[50], borderBottom: `1px solid ${tokens.colors.cream[400]}`, padding: '12px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 50 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button onClick={onMenuClick} style={{ background: 'none', border: 'none', cursor: 'pointer', color: tokens.colors.text.secondary, padding: '8px', borderRadius: tokens.radius.sm }}>
+          <Icon name="menu" size={20} />
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: tokens.colors.cream[300], padding: '8px 14px', borderRadius: tokens.radius.md, width: '300px' }}>
+          <Icon name="search" size={16} color={tokens.colors.text.muted} />
+          <input placeholder={`Search ${industry.terminology.input.toLowerCase()}s, documents...`} style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', color: tokens.colors.text.primary, width: '100%', fontFamily: 'inherit' }} />
         </div>
-        <span style={{ fontSize: '13px', fontWeight: 500, color: tokens.colors.text.primary }}>{persona.title}</span>
       </div>
-    </div>
-  </header>
-);
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {industry.regulations.slice(0, 3).map(reg => <Badge key={reg} variant="neutral">{reg}</Badge>)}
+        </div>
+        <LanguageSelector />
+        <button style={{ position: 'relative', background: tokens.colors.cream[300], border: 'none', padding: '9px', borderRadius: tokens.radius.md, cursor: 'pointer' }}>
+          <Icon name="bell" size={18} color={tokens.colors.text.secondary} />
+          <span style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', borderRadius: '50%', background: tokens.colors.action.main }} />
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 12px 5px 5px', background: tokens.colors.cream[300], borderRadius: tokens.radius.full }}>
+          <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: tokens.colors.brand[600], display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name={persona.icon} size={16} color="#FFF" />
+          </div>
+          <span style={{ fontSize: '13px', fontWeight: 500, color: tokens.colors.text.primary }}>{persona.title}</span>
+        </div>
+      </div>
+    </header>
+  );
+};
 
 // ============================================================================
 // INDUSTRY SELECTOR (Demo)
@@ -2292,11 +2700,13 @@ const App: FC = () => {
   const [personaId] = useState<PersonaId>('compliance_officer');
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
+  const [lang, setLang] = useState<Language>('en'); // Default to English
+
   const industry = industries[industryId];
   const persona = personas[personaId];
   const mockData = useMemo(() => generateMockData(industry), [industry]);
-  
+  const t = translations[lang];
+
   const kpiValues: Record<string, number> = {
     // Tyval Tire EPR
     collectionVolume: 2450, reuseRate: 18.5, punrStock: 3200, valorizationRate: 97.2,
@@ -2311,6 +2721,7 @@ const App: FC = () => {
   };
 
   return (
+    <LanguageContext.Provider value={{ lang, setLang, t }}>
     <div style={{ minHeight: '100vh', background: tokens.colors.cream[100], fontFamily: "'Nunito', -apple-system, sans-serif", display: 'flex' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
@@ -2373,6 +2784,7 @@ const App: FC = () => {
 
       <IndustrySelector selected={industryId} onChange={setIndustryId} />
     </div>
+    </LanguageContext.Provider>
   );
 };
 
