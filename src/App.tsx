@@ -2775,15 +2775,18 @@ const ProcessFlowEditor: FC<{ industry: Industry; onNavigate?: (tab: string) => 
 const PRNManagementView: FC<{ industry: Industry }> = ({ industry }) => {
   const { t } = useLanguage();
 
-  // PRN Process Steps
-  const processSteps = [
-    { id: 1, key: 'registration', icon: 'document', status: 'verified' as const },
-    { id: 2, key: 'dataCollection', icon: 'reports', status: 'verified' as const },
-    { id: 3, key: 'obligationCalc', icon: 'scale', status: 'verified' as const },
-    { id: 4, key: 'acquisition', icon: 'certificate', status: 'pending' as const },
-    { id: 5, key: 'verification', icon: 'checkCircle', status: 'pending' as const },
-    { id: 6, key: 'compliance', icon: 'trophy', status: 'flagged' as const },
-  ];
+  // Get process steps from industry configuration (dynamic)
+  const processConfig = defaultProcessConfigurations[industry.id];
+  const processSteps = processConfig.steps.map((step, index) => ({
+    id: index + 1,
+    key: step.id,
+    label: step.label,
+    icon: step.icon,
+    description: step.description,
+    // Simulate status based on step position
+    status: index < processConfig.steps.length - 2 ? 'verified' as const :
+            index === processConfig.steps.length - 1 ? 'flagged' as const : 'pending' as const,
+  }));
 
   // Mock PRN data by material type
   const prnData = [
@@ -2853,8 +2856,8 @@ const PRNManagementView: FC<{ industry: Industry }> = ({ industry }) => {
                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: step.status === 'verified' ? tokens.colors.success.main : step.status === 'pending' ? tokens.colors.neutral.main : tokens.colors.action.main, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
                   <Icon name={step.icon} size={16} color="#FFF" />
                 </div>
-                <div style={{ fontSize: '11px', fontWeight: 600, color: tokens.colors.text.primary }}>{t.prn[step.key as keyof typeof t.prn]}</div>
-                <div style={{ fontSize: '10px', color: tokens.colors.text.muted, marginTop: '4px' }}>{t.prn[`${step.key}Desc` as keyof typeof t.prn]}</div>
+                <div style={{ fontSize: '11px', fontWeight: 600, color: tokens.colors.text.primary }}>{step.label}</div>
+                <div style={{ fontSize: '10px', color: tokens.colors.text.muted, marginTop: '4px' }}>{step.description}</div>
               </div>
               {idx < processSteps.length - 1 && <span style={{ margin: '0 4px' }}><Icon name="arrowRight" size={16} color={tokens.colors.text.muted} /></span>}
             </div>
@@ -2929,16 +2932,18 @@ const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
   const [selectedCOA, setSelectedCOA] = useState<COADocument | null>(null);
   const [showFailedOnly, setShowFailedOnly] = useState(false);
 
-  // COA Verification Steps
-  const verificationSteps = [
-    { id: 1, key: 'supplierQualification', icon: 'complianceOfficer', status: 'verified' as const },
-    { id: 2, key: 'documentReception', icon: 'document', status: 'verified' as const },
-    { id: 3, key: 'productIdentification', icon: 'search', status: 'verified' as const },
-    { id: 4, key: 'batchTracking', icon: 'flows', status: 'verified' as const },
-    { id: 5, key: 'testResultsReview', icon: 'reports', status: 'pending' as const },
-    { id: 6, key: 'specificationCheck', icon: 'checkCircle', status: 'pending' as const },
-    { id: 7, key: 'authorization', icon: 'certificate', status: 'flagged' as const },
-  ];
+  // Get process steps from industry configuration (dynamic)
+  const processConfig = defaultProcessConfigurations[industry.id];
+  const verificationSteps = processConfig.steps.map((step, index) => ({
+    id: index + 1,
+    key: step.id,
+    label: step.label,
+    icon: step.icon,
+    description: step.description,
+    // Simulate status based on step position (first half verified, last steps pending/flagged)
+    status: index < processConfig.steps.length - 2 ? 'verified' as const :
+            index === processConfig.steps.length - 1 ? 'flagged' as const : 'pending' as const,
+  }));
 
   // Mock COA data with detailed test results
   const coaData: COADocument[] = [
@@ -3045,25 +3050,22 @@ const COAVerificationView: FC<{ industry: Industry }> = ({ industry }) => {
 
   // Generate email content
   const generateEmailContent = (coa: COADocument, failedTest?: COATestResult) => {
-    const subject = encodeURIComponent(
-      lang === 'fr'
-        ? `[Action requise] Clarification COA ${coa.id} - ${coa.batch}`
-        : `[Action Required] COA Clarification ${coa.id} - ${coa.batch}`
-    );
+    const subjectText = lang === 'fr'
+      ? `[Action requise] Clarification COA ${coa.id} - ${coa.batch}`
+      : `[Action Required] COA Clarification ${coa.id} - ${coa.batch}`;
 
     const failedTestsList = coa.testResults.filter(t => !t.passed && t.result !== 'Pending');
     const failedTestsText = failedTestsList.map(t =>
-      `- ${t.parameter}: ${t.result} ${t.unit} (${lang === 'fr' ? 'Spec' : 'Spec'}: ${t.specification})`
-    ).join('%0A');
+      `- ${t.parameter}: ${t.result} ${t.unit} (Spec: ${t.specification})`
+    ).join('\n');
 
-    const body = encodeURIComponent(
-      lang === 'fr'
-        ? `Bonjour ${coa.supplierContact},
+    const bodyText = lang === 'fr'
+      ? `Bonjour ${coa.supplierContact},
 
 Nous avons identifié des non-conformités dans le Certificat d'Analyse ${coa.id} pour le lot ${coa.batch} (${coa.material}).
 
 Tests non conformes:
-${decodeURIComponent(failedTestsText)}
+${failedTestsText}
 
 Pourriez-vous nous fournir des informations complémentaires concernant ces écarts ?
 
@@ -3075,13 +3077,13 @@ Actions demandées:
 Merci de votre retour rapide.
 
 Cordialement,
-Équipe Qualité eco₂Veritas`
-        : `Dear ${coa.supplierContact},
+Équipe Qualité eco2Veritas`
+      : `Dear ${coa.supplierContact},
 
 We have identified non-conformities in Certificate of Analysis ${coa.id} for batch ${coa.batch} (${coa.material}).
 
 Failed tests:
-${decodeURIComponent(failedTestsText)}
+${failedTestsText}
 
 Could you please provide additional information regarding these discrepancies?
 
@@ -3093,10 +3095,9 @@ Actions requested:
 Thank you for your prompt response.
 
 Best regards,
-eco₂Veritas Quality Team`
-    );
+eco2Veritas Quality Team`;
 
-    return `mailto:${coa.supplierEmail}?subject=${subject}&body=${body}`;
+    return `mailto:${coa.supplierEmail}?subject=${encodeURIComponent(subjectText)}&body=${encodeURIComponent(bodyText)}`;
   };
 
   return (
@@ -3236,7 +3237,7 @@ eco₂Veritas Quality Team`
                 <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: step.status === 'verified' ? tokens.colors.success.main : step.status === 'pending' ? tokens.colors.neutral.main : tokens.colors.action.main, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 6px' }}>
                   <Icon name={step.icon} size={14} color="#FFF" />
                 </div>
-                <div style={{ fontSize: '10px', fontWeight: 600, color: tokens.colors.text.primary }}>{t.coa[step.key as keyof typeof t.coa]}</div>
+                <div style={{ fontSize: '10px', fontWeight: 600, color: tokens.colors.text.primary }}>{step.label}</div>
               </div>
               {idx < verificationSteps.length - 1 && <span style={{ margin: '0 2px', flexShrink: 0 }}><Icon name="arrowRight" size={12} color={tokens.colors.text.muted} /></span>}
             </div>
