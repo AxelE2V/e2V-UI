@@ -9,6 +9,8 @@
 import React, { useState, useMemo, useRef, useEffect, createContext, useContext, type ReactNode, type FC, type CSSProperties } from 'react';
 import { OperationsManagerDashboard } from './views/OperationsManagerDashboard';
 import { SiteOperatorDashboard } from './views/SiteOperatorDashboard';
+import { CollectorDashboard } from './views/CollectorDashboard';
+import { TireOperationsDirectorDashboard } from './views/TireOperationsDirectorDashboard';
 
 // ============================================================================
 // INTERNATIONALIZATION (i18n)
@@ -558,7 +560,7 @@ const useLanguage = () => useContext(LanguageContext);
 // ============================================================================
 
 type IndustryId = 'tire_epo' | 'chemical_recycling' | 'packaging_prn' | 'weee_collection' | 'plastics_mechanical';
-type PersonaId = 'compliance_officer' | 'operations_manager' | 'site_operator';
+type PersonaId = 'compliance_officer' | 'operations_manager' | 'site_operator' | 'collector' | 'operations_director';
 type DocumentStatus = 'verified' | 'pending' | 'flagged' | 'missing';
 type ProcessStep = 'collection' | 'reception' | 'processing' | 'output' | 'certification' | 'coa_verification' | 'prn_management';
 type EvidenceType = 'document' | 'photo' | 'iot_data' | 'manual_entry' | 'signature' | 'geolocation';
@@ -992,6 +994,8 @@ const personas: Record<PersonaId, Persona> = {
   compliance_officer: { id: 'compliance_officer', title: 'Compliance Officer', icon: 'complianceOfficer', focus: ['Audit readiness', 'Certificate validity', 'Regulatory deadlines', 'Filing status'], dashboardLayout: ['alerts', 'certificates', 'audits', 'deadlines'] },
   operations_manager: { id: 'operations_manager', title: 'Operations Manager', icon: 'operationsManager', focus: ['Process efficiency', 'Document processing', 'Error rates', 'Throughput'], dashboardLayout: ['kpis', 'processing', 'flows', 'quality'] },
   site_operator: { id: 'site_operator', title: 'Site Operator', icon: 'siteOperator', focus: ['Daily operations', 'Document upload', 'Verification status', 'Tasks'], dashboardLayout: ['tasks', 'upload', 'recent', 'status'] },
+  collector: { id: 'collector', title: 'Collecteur', icon: 'truck', focus: ['Tournée collecte', 'Upload documents', 'Traçabilité TYVAL', 'GPS & Photos'], dashboardLayout: ['route', 'upload', 'traceability', 'documents'] },
+  operations_director: { id: 'operations_director', title: 'Directeur des Opérations', icon: 'target', focus: ['KPIs réglementaires', 'Performance collecteurs', 'Valorisation', 'Conformité ADEME'], dashboardLayout: ['regulatory_kpis', 'collectors', 'valorization', 'reporting'] },
 };
 
 // ============================================================================
@@ -3981,6 +3985,8 @@ const PersonaSelector: FC<{ selected: PersonaId; onChange: (id: PersonaId) => vo
     compliance_officer: { fr: 'Responsable Conformité', en: 'Compliance Officer' },
     operations_manager: { fr: 'Responsable Opérations', en: 'Operations Manager' },
     site_operator: { fr: 'Opérateur Site', en: 'Site Operator' },
+    collector: { fr: 'Collecteur', en: 'Collector' },
+    operations_director: { fr: 'Directeur des Opérations', en: 'Operations Director' },
   };
 
   return (
@@ -4680,6 +4686,14 @@ const App: FC = () => {
 
           {activeTab === 'dashboard' && personaId === 'site_operator' && (
             <SiteOperatorDashboard industry={industry} lang={lang} onNavigate={setActiveTab} />
+          )}
+
+          {activeTab === 'dashboard' && personaId === 'collector' && (
+            <CollectorDashboard industry={industry} lang={lang} onNavigate={setActiveTab} />
+          )}
+
+          {activeTab === 'dashboard' && personaId === 'operations_director' && (
+            <TireOperationsDirectorDashboard industry={industry} lang={lang} onNavigate={setActiveTab} />
           )}
 
           {activeTab === 'processconfig' && <ProcessFlowEditor industry={industry} onNavigate={setActiveTab} />}

@@ -205,7 +205,7 @@ export interface Industry {
 }
 
 // Persona types
-export type PersonaId = 'compliance_officer' | 'operations_manager' | 'site_operator';
+export type PersonaId = 'compliance_officer' | 'operations_manager' | 'site_operator' | 'collector' | 'operations_director';
 
 export interface Persona {
   id: PersonaId;
