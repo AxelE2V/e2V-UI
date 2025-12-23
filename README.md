@@ -1,79 +1,162 @@
-# eco₂Veritas Platform
+# E2V Outreach
 
-Compliance & Traceability Platform for the Circular Economy.
+Outil de séquençage outreach commercial avec synchronisation HubSpot bidirectionnelle.
 
-## Features
+## Fonctionnalités
 
-- 🔄 Multi-industry support (Tire EPR, Chemical Recycling, Packaging, WEEE, Plastics)
-- 📊 Real-time dashboard with KPIs
-- 📄 Document processing & verification
-- ⚙️ Process configuration with evidence requirements
-- 📈 Mass balance tracking
-- 🏆 Certificate management
+- **Séquences multi-étapes** : Email + Appel par persona/industrie
+- **Templates email** : Variables dynamiques ({{firstName}}, {{company}}, etc.)
+- **Sync HubSpot bidirectionnel** : Import contacts, push statuts, log activités
+- **Dashboard KPIs** : Emails envoyés, taux ouverture, réponses
+- **Actions du Jour** : Exécution manuelle des steps quotidiens
 
-## Tech Stack
+## Stack Technique
 
-- **Frontend**: React 18 + TypeScript
-- **Build**: Vite
-- **Styling**: Inline styles with design tokens
-- **Deployment**: Vercel
+### Backend
+- **FastAPI** + **PostgreSQL**
+- Services : HubSpot API, SendGrid
+- Pas de Redis/Celery (envoi manuel des emails)
 
-## Getting Started
+### Frontend
+- **Next.js 14** (App Router)
+- **Tailwind CSS** + **shadcn/ui**
+- TypeScript
 
-### Prerequisites
+## Installation
 
+### Prérequis
+- Python 3.11+
 - Node.js 18+
-- npm or yarn
+- PostgreSQL 15+
 
-### Installation
+### Backend
 
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/eco2veritas-platform.git
-cd eco2veritas-platform
+cd backend
 
-# Install dependencies
+# Créer un environnement virtuel
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# ou: venv\Scripts\activate  # Windows
+
+# Installer les dépendances
+pip install -r requirements.txt
+
+# Configurer les variables d'environnement
+cp .env.example .env
+# Éditer .env avec vos credentials
+
+# Lancer le serveur
+uvicorn main:app --reload --port 8000
+```
+
+### Frontend
+
+```bash
+cd frontend
+
+# Installer les dépendances
 npm install
 
-# Start development server
+# Lancer le serveur de développement
 npm run dev
 ```
 
-### Build for Production
+L'application sera disponible sur http://localhost:3000
 
-```bash
-npm run build
+## Configuration
+
+### Variables d'environnement (backend/.env)
+
+```env
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/e2v_outreach
+
+# HubSpot (Private App)
+HUBSPOT_ACCESS_TOKEN=pat-xxx
+HUBSPOT_PORTAL_ID=your-portal-id
+
+# SendGrid
+SENDGRID_API_KEY=SG.xxx
+SENDGRID_FROM_EMAIL=axel@eco2veritas.com
+SENDGRID_FROM_NAME=Axel - eco₂Veritas
 ```
 
-## Deployment
+### Configuration HubSpot
 
-This project is configured for deployment on Vercel:
+1. Créer une Private App dans HubSpot
+2. Scopes requis : `crm.objects.contacts.read`, `crm.objects.contacts.write`, `sales-email-read`
+3. Copier l'Access Token dans `.env`
 
-1. Push to GitHub
-2. Connect repository to Vercel
-3. Deploy automatically on push
+## API Endpoints
 
-## Project Structure
+### Dashboard
+- `GET /api/dashboard/stats` - KPIs
+- `GET /api/dashboard/today` - Actions du jour
+
+### Contacts
+- `GET /api/contacts` - Liste avec filtres
+- `POST /api/contacts` - Créer
+- `PUT /api/contacts/{id}` - Modifier
+
+### Séquences
+- `GET /api/sequences` - Liste
+- `POST /api/sequences` - Créer avec steps
+- `POST /api/sequences/{id}/enroll` - Inscrire un contact
+
+### Templates
+- `GET /api/templates` - Liste
+- `POST /api/templates/preview` - Prévisualiser avec variables
+
+### HubSpot Sync
+- `POST /api/hubspot/sync/contacts/import` - Importer contacts
+- `POST /api/hubspot/sync/contacts/{id}/push` - Pousser vers HubSpot
+
+## Structure du Projet
 
 ```
-eco2veritas-platform/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── App.tsx          # Main application component
-│   ├── main.tsx         # Entry point
-│   └── index.css        # Global styles
-├── index.html
-├── package.json
-├── tsconfig.json
-├── vite.config.ts
+e2v-outreach/
+├── backend/
+│   ├── api/routes/          # API endpoints
+│   ├── core/                # Config, database
+│   ├── models/              # SQLAlchemy models
+│   ├── schemas/             # Pydantic schemas
+│   ├── services/            # HubSpot, SendGrid
+│   ├── main.py              # FastAPI app
+│   └── requirements.txt
+├── frontend/
+│   ├── app/                 # Next.js pages
+│   ├── components/          # React components
+│   ├── lib/                 # Utils, API client
+│   ├── types/               # TypeScript types
+│   └── package.json
 └── README.md
 ```
 
-## License
+## Développement
 
-Proprietary - eco₂Veritas
+### Créer une migration (Alembic)
+
+```bash
+cd backend
+alembic revision --autogenerate -m "description"
+alembic upgrade head
+```
+
+### Lancer les tests
+
+```bash
+cd backend
+pytest
+```
+
+## Roadmap
+
+- [ ] Intégration Sales Navigator (Janvier 2026)
+- [ ] Tracking email opens/clicks webhook
+- [ ] A/B testing templates
+- [ ] Reporting avancé
 
 ---
 
-Built with ❤️ by eco₂Veritas Team
+Built for eco₂Veritas by Axel Berard
