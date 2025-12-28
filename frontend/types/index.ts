@@ -256,8 +256,8 @@ export interface EnrichmentBatchResponse {
 
 export interface EnrichmentStatus {
   total_contacts: number
-  enriched_contacts: number
-  unenriched_contacts: number
+  contacts_with_phone: number
+  contacts_missing_phone: number
   segmented_contacts: number
   contacts_with_icp_criteria: number
   lusha_configured: boolean

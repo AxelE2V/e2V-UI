@@ -321,24 +321,23 @@ async def enrich_contact(contact_id: int, db: Session = Depends(get_db)):
 @router.post("/enrich/batch", response_model=EnrichmentBatchResponse)
 async def enrich_contacts_batch(
     contact_ids: Optional[List[int]] = None,
-    unenriched_only: bool = Query(True, description="Only enrich contacts not yet enriched"),
+    missing_phone_only: bool = Query(True, description="Only enrich contacts without phone number"),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db)
 ):
     """
-    Enrich multiple contacts in batch
+    Enrich multiple contacts in batch (manual trigger only)
 
-    If contact_ids not provided, will select unenriched contacts automatically.
+    If contact_ids not provided, will select contacts missing phone numbers.
     """
     if contact_ids:
         contacts = db.query(Contact).filter(Contact.id.in_(contact_ids)).all()
     else:
         query = db.query(Contact)
-        if unenriched_only:
-            # Consider "unenriched" as having default values
+        if missing_phone_only:
+            # Only enrich contacts without phone number
             query = query.filter(
-                (Contact.company_segment == CompanySegment.OTHER) |
-                (Contact.company_size == None)
+                (Contact.phone == None) | (Contact.phone == "")
             )
         contacts = query.limit(limit).all()
 
@@ -368,12 +367,13 @@ def get_enrichment_status(db: Session = Depends(get_db)):
 
     total = db.query(Contact).count()
 
-    # Count contacts with enrichment data
-    enriched = db.query(Contact).filter(
-        (Contact.company_size != None) |
-        (Contact.company_revenue != None) |
-        (Contact.company_website != None)
+    # Count contacts with phone number
+    with_phone = db.query(Contact).filter(
+        (Contact.phone != None) & (Contact.phone != "")
     ).count()
+
+    # Count contacts missing phone number (candidates for enrichment)
+    missing_phone = total - with_phone
 
     # Count by segment (non-OTHER)
     segmented = db.query(Contact).filter(
@@ -391,8 +391,8 @@ def get_enrichment_status(db: Session = Depends(get_db)):
 
     return {
         "total_contacts": total,
-        "enriched_contacts": enriched,
-        "unenriched_contacts": total - enriched,
+        "contacts_with_phone": with_phone,
+        "contacts_missing_phone": missing_phone,
         "segmented_contacts": segmented,
         "contacts_with_icp_criteria": with_criteria,
         "lusha_configured": bool(settings.LUSHA_API_KEY),

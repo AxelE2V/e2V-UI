@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     LUSHA_API_KEY: str = ""
 
     # Enrichment settings
-    ENRICHMENT_AUTO_ENABLED: bool = True
+    ENRICHMENT_AUTO_ENABLED: bool = False  # Manual enrichment only
     ENRICHMENT_BATCH_SIZE: int = 10
 
     class Config:

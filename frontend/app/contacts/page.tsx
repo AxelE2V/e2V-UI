@@ -126,15 +126,15 @@ export default function ContactsPage() {
           <p className="text-gray-500 mt-1">{total} contacts au total</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={handleEnrichBatch} disabled={enriching}>
-            <Sparkles className={cn("h-4 w-4 mr-2", enriching && "animate-pulse")} />
-            {enriching ? 'Enrichissement...' : 'Enrichir'}
-            {enrichmentStatus && enrichmentStatus.unenriched_contacts > 0 && (
+          {enrichmentStatus && enrichmentStatus.contacts_missing_phone > 0 && (
+            <Button variant="outline" onClick={handleEnrichBatch} disabled={enriching}>
+              <Sparkles className={cn("h-4 w-4 mr-2", enriching && "animate-pulse")} />
+              {enriching ? 'Enrichissement...' : 'Enrichir'}
               <span className="ml-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
-                {enrichmentStatus.unenriched_contacts}
+                {enrichmentStatus.contacts_missing_phone} sans tél.
               </span>
-            )}
-          </Button>
+            </Button>
+          )}
           <Button variant="outline" onClick={handleHubSpotSync} disabled={syncing}>
             <RefreshCcw className={cn("h-4 w-4 mr-2", syncing && "animate-spin")} />
             {syncing ? 'Sync...' : 'Import HubSpot'}
@@ -382,18 +382,20 @@ export default function ContactsPage() {
                     {/* Actions */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEnrichContact(contact.id)}
-                          disabled={enrichingId === contact.id}
-                          className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50"
-                          title="Enrichir ce contact"
-                        >
-                          {enrichingId === contact.id ? (
-                            <RefreshCcw className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Sparkles className="h-4 w-4" />
-                          )}
-                        </button>
+                        {!contact.phone && (
+                          <button
+                            onClick={() => handleEnrichContact(contact.id)}
+                            disabled={enrichingId === contact.id}
+                            className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50"
+                            title="Enrichir ce contact (rechercher téléphone)"
+                          >
+                            {enrichingId === contact.id ? (
+                              <RefreshCcw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
                         {contact.company_website && (
                           <a
                             href={contact.company_website.startsWith('http') ? contact.company_website : `https://${contact.company_website}`}
