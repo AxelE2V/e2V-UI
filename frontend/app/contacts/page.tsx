@@ -10,12 +10,18 @@ import {
   Plus,
   Mail,
   Building,
-  RefreshCcw
+  RefreshCcw,
+  Target,
+  TrendingUp,
+  Filter
 } from 'lucide-react'
 import { contactsAPI, hubspotAPI } from '@/lib/api'
-import type { Contact } from '@/types'
-import { statusLabels, statusColors, industryLabels, personaLabels, formatRelativeTime } from '@/lib/utils'
-import { cn } from '@/lib/utils'
+import type { Contact, ICPTier } from '@/types'
+import {
+  statusLabels, statusColors, industryLabels, personaLabels,
+  formatRelativeTime, segmentLabels, tierLabels, tierColors,
+  getScoreColor, getPriorityLabel, cn
+} from '@/lib/utils'
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -24,11 +30,15 @@ export default function ContactsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [syncing, setSyncing] = useState(false)
+  const [tierFilter, setTierFilter] = useState<ICPTier | ''>('')
+  const [sortBy, setSortBy] = useState<'created_at' | 'icp_score'>('icp_score')
 
   const loadContacts = async () => {
     setLoading(true)
     try {
-      const result = await contactsAPI.list({ page, search: search || undefined })
+      const params: any = { page, search: search || undefined, sort_by: sortBy, sort_order: 'desc' }
+      if (tierFilter) params.icp_tier = tierFilter
+      const result = await contactsAPI.list(params)
       setContacts(result.contacts)
       setTotal(result.total)
     } catch (error) {
@@ -40,7 +50,7 @@ export default function ContactsPage() {
 
   useEffect(() => {
     loadContacts()
-  }, [page, search])
+  }, [page, search, tierFilter, sortBy])
 
   const handleHubSpotSync = async () => {
     setSyncing(true)
@@ -55,6 +65,10 @@ export default function ContactsPage() {
       setSyncing(false)
     }
   }
+
+  // Count by tier
+  const tier1Count = contacts.filter(c => c.icp_tier === 'tier_1').length
+  const tier2Count = contacts.filter(c => c.icp_tier === 'tier_2').length
 
   return (
     <div className="space-y-8">
@@ -76,18 +90,97 @@ export default function ContactsPage() {
         </div>
       </div>
 
-      {/* Search */}
+      {/* ICP Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="cursor-pointer hover:shadow-md" onClick={() => setTierFilter('tier_1')}>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Tier 1 - Prioritaires</p>
+                <p className="text-2xl font-bold text-red-600">{tier1Count}</p>
+              </div>
+              <div className="p-2 bg-red-100 rounded-lg">
+                <Target className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:shadow-md" onClick={() => setTierFilter('tier_2')}>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Tier 2 - Intéressants</p>
+                <p className="text-2xl font-bold text-orange-600">{tier2Count}</p>
+              </div>
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-orange-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="cursor-pointer hover:shadow-md" onClick={() => setTierFilter('')}>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Total Contacts</p>
+                <p className="text-2xl font-bold">{total}</p>
+              </div>
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Users className="h-6 w-6 text-gray-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Score Moyen</p>
+                <p className="text-2xl font-bold">
+                  {contacts.length > 0
+                    ? (contacts.reduce((sum, c) => sum + (c.icp_score || 0), 0) / contacts.length).toFixed(1)
+                    : '0'}
+                  /10
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search & Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Rechercher par nom, email, entreprise..."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-e2v-primary"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Rechercher par nom, email, entreprise..."
+                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-e2v-primary"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <select
+              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-e2v-primary"
+              value={tierFilter}
+              onChange={(e) => setTierFilter(e.target.value as ICPTier | '')}
+            >
+              <option value="">Tous les tiers</option>
+              <option value="tier_1">🔥 Tier 1 - Prioritaires</option>
+              <option value="tier_2">⭐ Tier 2 - Intéressants</option>
+              <option value="tier_3">📋 Tier 3 - Secondaires</option>
+              <option value="non_target">Non-target</option>
+            </select>
+            <select
+              className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-e2v-primary"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'created_at' | 'icp_score')}
+            >
+              <option value="icp_score">Trier par Score ICP</option>
+              <option value="created_at">Trier par Date</option>
+            </select>
           </div>
         </CardContent>
       </Card>
@@ -107,28 +200,50 @@ export default function ContactsPage() {
               <thead className="bg-gray-50 border-b">
                 <tr>
                   <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Score ICP
+                  </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Contact
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Entreprise
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Industrie / Persona
+                    Segment
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Activité
-                  </th>
-                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    HubSpot
+                    Signaux
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {contacts.map((contact) => (
                   <tr key={contact.id} className="hover:bg-gray-50">
+                    {/* Score ICP */}
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col items-center">
+                        <div className={cn(
+                          "w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold",
+                          getScoreColor(contact.icp_score)
+                        )}>
+                          {contact.icp_score}
+                        </div>
+                        {contact.icp_tier && (
+                          <span className={cn(
+                            "mt-1 text-xs px-2 py-0.5 rounded-full",
+                            tierColors[contact.icp_tier]
+                          )}>
+                            {contact.icp_tier === 'tier_1' ? '🔥 T1' :
+                             contact.icp_tier === 'tier_2' ? '⭐ T2' :
+                             contact.icp_tier === 'tier_3' ? 'T3' : '-'}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    {/* Contact */}
                     <td className="px-6 py-4">
                       <div>
                         <p className="font-medium text-gray-900">
@@ -138,8 +253,12 @@ export default function ContactsPage() {
                           <Mail className="h-3 w-3" />
                           {contact.email}
                         </p>
+                        {contact.job_title && (
+                          <p className="text-xs text-gray-400">{contact.job_title}</p>
+                        )}
                       </div>
                     </td>
+                    {/* Entreprise */}
                     <td className="px-6 py-4">
                       {contact.company && (
                         <div className="flex items-center gap-1 text-gray-600">
@@ -147,35 +266,59 @@ export default function ContactsPage() {
                           {contact.company}
                         </div>
                       )}
-                      {contact.job_title && (
-                        <p className="text-sm text-gray-400">{contact.job_title}</p>
+                      {contact.company_country && (
+                        <p className="text-xs text-gray-400">{contact.company_country}</p>
                       )}
                     </td>
+                    {/* Segment */}
                     <td className="px-6 py-4">
-                      <p className="text-sm">{industryLabels[contact.industry] || contact.industry}</p>
-                      <p className="text-xs text-gray-400">{personaLabels[contact.persona] || contact.persona}</p>
+                      <p className="text-sm">
+                        {contact.company_segment
+                          ? segmentLabels[contact.company_segment] || contact.company_segment
+                          : industryLabels[contact.industry] || contact.industry}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {personaLabels[contact.persona] || contact.persona}
+                      </p>
                     </td>
+                    {/* Status */}
                     <td className="px-6 py-4">
                       <Badge className={statusColors[contact.status]}>
                         {statusLabels[contact.status] || contact.status}
                       </Badge>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {contact.emails_sent} emails
+                      </p>
                     </td>
+                    {/* Signaux */}
                     <td className="px-6 py-4">
-                      <div className="text-sm">
-                        <p>{contact.emails_sent} emails envoyés</p>
-                        {contact.last_contacted_at && (
-                          <p className="text-gray-400 text-xs">
-                            Dernier contact: {formatRelativeTime(contact.last_contacted_at)}
-                          </p>
+                      <div className="flex flex-wrap gap-1">
+                        {contact.iscc_certified && (
+                          <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
+                            ISCC+
+                          </span>
+                        )}
+                        {contact.iscc_in_progress && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                            ISCC prog
+                          </span>
+                        )}
+                        {contact.multi_sites_eu && (
+                          <span className="text-xs bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">
+                            Multi-EU
+                          </span>
+                        )}
+                        {contact.epr_ppwr_exposure && (
+                          <span className="text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">
+                            EPR/PPWR
+                          </span>
+                        )}
+                        {contact.employees_over_100 && (
+                          <span className="text-xs bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">
+                            100+ emp
+                          </span>
                         )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {contact.hubspot_id ? (
-                        <Badge variant="success">Synced</Badge>
-                      ) : (
-                        <Badge variant="outline">Local</Badge>
-                      )}
                     </td>
                   </tr>
                 ))}

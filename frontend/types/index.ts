@@ -25,6 +25,20 @@ export type Persona =
   | 'compliance'
   | 'other'
 
+export type CompanySegment =
+  | 'chemical_recycling'
+  | 'tire_recycling'
+  | 'food_grade_packaging'
+  | 'eco_organisme'
+  | 'flexible_packaging'
+  | 'plastic_compounder'
+  | 'waste_management'
+  | 'fmcg_brand'
+  | 'equipment_provider'
+  | 'other'
+
+export type ICPTier = 'tier_1' | 'tier_2' | 'tier_3' | 'non_target'
+
 export interface Contact {
   id: number
   email: string
@@ -47,6 +61,21 @@ export interface Contact {
   notes: string | null
   created_at: string
   updated_at: string
+  // ICP Scoring
+  company_segment: CompanySegment | null
+  icp_score: number
+  icp_tier: ICPTier | null
+  iscc_certified: boolean
+  iscc_in_progress: boolean
+  multi_sites_eu: boolean
+  epr_ppwr_exposure: boolean
+  employees_over_100: boolean
+  visible_it_budget: boolean
+  // Enrichment
+  company_size: string | null
+  company_revenue: string | null
+  company_country: string | null
+  company_website: string | null
 }
 
 // Sequence types
