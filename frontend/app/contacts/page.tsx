@@ -21,7 +21,10 @@ import {
   Linkedin,
   X,
   ExternalLink,
-  Phone
+  Phone,
+  Edit3,
+  Check,
+  SearchIcon
 } from 'lucide-react'
 import { contactsAPI, hubspotAPI } from '@/lib/api'
 import type { Contact, ICPTier, EnrichmentStatus } from '@/types'
@@ -44,6 +47,40 @@ export default function ContactsPage() {
   const [enrichingId, setEnrichingId] = useState<number | null>(null)
   const [enrichmentStatus, setEnrichmentStatus] = useState<EnrichmentStatus | null>(null)
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [editingLinkedIn, setEditingLinkedIn] = useState(false)
+  const [linkedInInput, setLinkedInInput] = useState('')
+  const [savingLinkedIn, setSavingLinkedIn] = useState(false)
+
+  // Generate LinkedIn search URL
+  const getLinkedInSearchUrl = (contact: Contact) => {
+    const searchTerms = [
+      contact.first_name,
+      contact.last_name,
+      contact.company
+    ].filter(Boolean).join(' ')
+    return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(searchTerms)}`
+  }
+
+  // Save LinkedIn URL
+  const handleSaveLinkedIn = async () => {
+    if (!selectedContact || !linkedInInput.trim()) return
+
+    setSavingLinkedIn(true)
+    try {
+      await contactsAPI.update(selectedContact.id, { linkedin_url: linkedInInput.trim() })
+      // Update local state
+      setSelectedContact({ ...selectedContact, linkedin_url: linkedInInput.trim() })
+      setContacts(contacts.map(c =>
+        c.id === selectedContact.id ? { ...c, linkedin_url: linkedInInput.trim() } : c
+      ))
+      setEditingLinkedIn(false)
+    } catch (error) {
+      console.error('Failed to save LinkedIn URL:', error)
+      alert('Erreur lors de la sauvegarde')
+    } finally {
+      setSavingLinkedIn(false)
+    }
+  }
 
   const loadContacts = async () => {
     setLoading(true)
@@ -387,15 +424,22 @@ export default function ContactsPage() {
                     {/* Actions */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        {contact.linkedin_url && (
-                          <button
-                            onClick={() => setSelectedContact(contact)}
-                            className="p-1.5 text-gray-400 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
-                            title="Voir profil LinkedIn"
-                          >
-                            <Linkedin className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => {
+                            setSelectedContact(contact)
+                            setLinkedInInput(contact.linkedin_url || '')
+                            setEditingLinkedIn(false)
+                          }}
+                          className={cn(
+                            "p-1.5 rounded transition-colors",
+                            contact.linkedin_url
+                              ? "text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              : "text-gray-300 hover:text-blue-600 hover:bg-blue-50"
+                          )}
+                          title={contact.linkedin_url ? "Voir profil LinkedIn" : "Rechercher sur LinkedIn"}
+                        >
+                          <Linkedin className="h-4 w-4" />
+                        </button>
                         {!contact.phone && (
                           <button
                             onClick={() => handleEnrichContact(contact.id)}
@@ -525,7 +569,86 @@ export default function ContactsPage() {
             </div>
 
             {/* LinkedIn Preview Card */}
-            <div className="p-4 flex-1 overflow-y-auto">
+            <div className="p-4 flex-1 overflow-y-auto pb-24">
+              {/* Search on LinkedIn */}
+              <div className="mb-4">
+                <a
+                  href={getLinkedInSearchUrl(selectedContact)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 w-full p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-blue-700 transition-colors"
+                >
+                  <SearchIcon className="h-4 w-4" />
+                  <span className="text-sm font-medium">Rechercher sur LinkedIn</span>
+                  <ExternalLink className="h-3 w-3 ml-auto" />
+                </a>
+                <p className="text-xs text-gray-400 mt-1 px-1">
+                  Recherche: {selectedContact.first_name} {selectedContact.last_name} {selectedContact.company}
+                </p>
+              </div>
+
+              {/* LinkedIn URL Input */}
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg border">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-gray-600">URL du profil LinkedIn</p>
+                  {!editingLinkedIn && selectedContact.linkedin_url && (
+                    <button
+                      onClick={() => {
+                        setEditingLinkedIn(true)
+                        setLinkedInInput(selectedContact.linkedin_url || '')
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                    >
+                      <Edit3 className="h-3 w-3" /> Modifier
+                    </button>
+                  )}
+                </div>
+
+                {editingLinkedIn || !selectedContact.linkedin_url ? (
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={linkedInInput}
+                      onChange={(e) => setLinkedInInput(e.target.value)}
+                      placeholder="https://www.linkedin.com/in/..."
+                      className="flex-1 px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                      onClick={handleSaveLinkedIn}
+                      disabled={savingLinkedIn || !linkedInInput.trim()}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {savingLinkedIn ? (
+                        <RefreshCcw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                    </button>
+                    {editingLinkedIn && (
+                      <button
+                        onClick={() => {
+                          setEditingLinkedIn(false)
+                          setLinkedInInput(selectedContact.linkedin_url || '')
+                        }}
+                        className="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <a
+                    href={selectedContact.linkedin_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline truncate block"
+                  >
+                    {selectedContact.linkedin_url}
+                  </a>
+                )}
+              </div>
+
+              {/* Profile Card (only if URL exists) */}
               {selectedContact.linkedin_url && (
                 <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-100 overflow-hidden">
                   {/* LinkedIn-style header */}
@@ -584,12 +707,6 @@ export default function ContactsPage() {
                           👥 100+ employés
                         </span>
                       )}
-                    </div>
-
-                    {/* LinkedIn link */}
-                    <div className="mt-4 pt-4 border-t">
-                      <p className="text-xs text-gray-400 mb-2">Profil LinkedIn</p>
-                      <p className="text-sm text-blue-600 truncate">{selectedContact.linkedin_url}</p>
                     </div>
                   </div>
                 </div>
