@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     # Sync settings
     HUBSPOT_SYNC_BATCH_SIZE: int = 100
 
+    # Lusha API (for enrichment)
+    LUSHA_API_KEY: str = ""
+
+    # Enrichment settings
+    ENRICHMENT_AUTO_ENABLED: bool = True
+    ENRICHMENT_BATCH_SIZE: int = 10
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

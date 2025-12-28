@@ -13,10 +13,14 @@ import {
   RefreshCcw,
   Target,
   TrendingUp,
-  Filter
+  Filter,
+  Sparkles,
+  Database,
+  Zap,
+  MoreVertical
 } from 'lucide-react'
 import { contactsAPI, hubspotAPI } from '@/lib/api'
-import type { Contact, ICPTier } from '@/types'
+import type { Contact, ICPTier, EnrichmentStatus } from '@/types'
 import {
   statusLabels, statusColors, industryLabels, personaLabels,
   formatRelativeTime, segmentLabels, tierLabels, tierColors,
@@ -32,6 +36,9 @@ export default function ContactsPage() {
   const [syncing, setSyncing] = useState(false)
   const [tierFilter, setTierFilter] = useState<ICPTier | ''>('')
   const [sortBy, setSortBy] = useState<'created_at' | 'icp_score'>('icp_score')
+  const [enriching, setEnriching] = useState(false)
+  const [enrichingId, setEnrichingId] = useState<number | null>(null)
+  const [enrichmentStatus, setEnrichmentStatus] = useState<EnrichmentStatus | null>(null)
 
   const loadContacts = async () => {
     setLoading(true)
@@ -48,8 +55,18 @@ export default function ContactsPage() {
     }
   }
 
+  const loadEnrichmentStatus = async () => {
+    try {
+      const status = await contactsAPI.getEnrichmentStatus()
+      setEnrichmentStatus(status)
+    } catch (error) {
+      console.error('Failed to load enrichment status:', error)
+    }
+  }
+
   useEffect(() => {
     loadContacts()
+    loadEnrichmentStatus()
   }, [page, search, tierFilter, sortBy])
 
   const handleHubSpotSync = async () => {
@@ -66,6 +83,36 @@ export default function ContactsPage() {
     }
   }
 
+  const handleEnrichBatch = async () => {
+    setEnriching(true)
+    try {
+      const result = await contactsAPI.enrichBatch(undefined, 50)
+      alert(`Enrichissement: ${result.message}`)
+      loadContacts()
+      loadEnrichmentStatus()
+    } catch (error) {
+      console.error('Enrichment failed:', error)
+      alert('Erreur d\'enrichissement')
+    } finally {
+      setEnriching(false)
+    }
+  }
+
+  const handleEnrichContact = async (contactId: number) => {
+    setEnrichingId(contactId)
+    try {
+      const result = await contactsAPI.enrich(contactId)
+      if (result.enriched) {
+        loadContacts()
+        loadEnrichmentStatus()
+      }
+    } catch (error) {
+      console.error('Contact enrichment failed:', error)
+    } finally {
+      setEnrichingId(null)
+    }
+  }
+
   // Count by tier
   const tier1Count = contacts.filter(c => c.icp_tier === 'tier_1').length
   const tier2Count = contacts.filter(c => c.icp_tier === 'tier_2').length
@@ -79,6 +126,15 @@ export default function ContactsPage() {
           <p className="text-gray-500 mt-1">{total} contacts au total</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="outline" onClick={handleEnrichBatch} disabled={enriching}>
+            <Sparkles className={cn("h-4 w-4 mr-2", enriching && "animate-pulse")} />
+            {enriching ? 'Enrichissement...' : 'Enrichir'}
+            {enrichmentStatus && enrichmentStatus.unenriched_contacts > 0 && (
+              <span className="ml-1 text-xs bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full">
+                {enrichmentStatus.unenriched_contacts}
+              </span>
+            )}
+          </Button>
           <Button variant="outline" onClick={handleHubSpotSync} disabled={syncing}>
             <RefreshCcw className={cn("h-4 w-4 mr-2", syncing && "animate-spin")} />
             {syncing ? 'Sync...' : 'Import HubSpot'}
@@ -217,6 +273,9 @@ export default function ContactsPage() {
                   <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Signaux
                   </th>
+                  <th className="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -317,6 +376,34 @@ export default function ContactsPage() {
                           <span className="text-xs bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">
                             100+ emp
                           </span>
+                        )}
+                      </div>
+                    </td>
+                    {/* Actions */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleEnrichContact(contact.id)}
+                          disabled={enrichingId === contact.id}
+                          className="p-1.5 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors disabled:opacity-50"
+                          title="Enrichir ce contact"
+                        >
+                          {enrichingId === contact.id ? (
+                            <RefreshCcw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-4 w-4" />
+                          )}
+                        </button>
+                        {contact.company_website && (
+                          <a
+                            href={contact.company_website.startsWith('http') ? contact.company_website : `https://${contact.company_website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Voir le site web"
+                          >
+                            <Database className="h-4 w-4" />
+                          </a>
                         )}
                       </div>
                     </td>

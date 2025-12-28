@@ -33,12 +33,27 @@ export const dashboardAPI = {
 
 // Contacts
 export const contactsAPI = {
-  list: (params?: { page?: number; status?: string; industry?: string; search?: string }) => {
+  list: (params?: {
+    page?: number
+    status?: string
+    industry?: string
+    search?: string
+    icp_tier?: string
+    company_segment?: string
+    min_score?: number
+    sort_by?: string
+    sort_order?: string
+  }) => {
     const query = new URLSearchParams()
     if (params?.page) query.set('page', params.page.toString())
     if (params?.status) query.set('status', params.status)
     if (params?.industry) query.set('industry', params.industry)
     if (params?.search) query.set('search', params.search)
+    if (params?.icp_tier) query.set('icp_tier', params.icp_tier)
+    if (params?.company_segment) query.set('company_segment', params.company_segment)
+    if (params?.min_score !== undefined) query.set('min_score', params.min_score.toString())
+    if (params?.sort_by) query.set('sort_by', params.sort_by)
+    if (params?.sort_order) query.set('sort_order', params.sort_order)
     return fetchAPI<{ contacts: import('@/types').Contact[]; total: number; page: number; per_page: number }>(
       `/contacts?${query}`
     )
@@ -49,6 +64,29 @@ export const contactsAPI = {
   update: (id: number, data: Partial<import('@/types').Contact>) =>
     fetchAPI<import('@/types').Contact>(`/contacts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: number) => fetchAPI(`/contacts/${id}`, { method: 'DELETE' }),
+  // ICP Scoring
+  updateScore: (id: number, data: import('@/types').ContactScoreUpdate) =>
+    fetchAPI<import('@/types').ICPScoreResponse>(`/contacts/${id}/score`, { method: 'POST', body: JSON.stringify(data) }),
+  recalculateScore: (id: number) =>
+    fetchAPI<import('@/types').Contact>(`/contacts/${id}/recalculate-score`, { method: 'POST' }),
+  recalculateAllScores: () =>
+    fetchAPI<{ message: string; updated: number }>('/contacts/recalculate-all-scores', { method: 'POST' }),
+  getHighPriority: (limit = 20) =>
+    fetchAPI<import('@/types').Contact[]>(`/contacts/high-priority?limit=${limit}`),
+  getSegmentStats: () =>
+    fetchAPI<import('@/types').SegmentStats>('/contacts/segments/stats'),
+  // Enrichment
+  enrich: (id: number) =>
+    fetchAPI<import('@/types').EnrichmentResponse>(`/contacts/${id}/enrich`, { method: 'POST' }),
+  enrichBatch: (contactIds?: number[], limit = 50) => {
+    const query = new URLSearchParams({ limit: limit.toString() })
+    return fetchAPI<import('@/types').EnrichmentBatchResponse>(`/contacts/enrich/batch?${query}`, {
+      method: 'POST',
+      body: contactIds ? JSON.stringify(contactIds) : undefined
+    })
+  },
+  getEnrichmentStatus: () =>
+    fetchAPI<import('@/types').EnrichmentStatus>('/contacts/enrichment/status'),
 }
 
 // Sequences

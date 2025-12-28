@@ -1,7 +1,7 @@
 """
 Contacts API Routes
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import Optional, List
 
@@ -9,8 +9,9 @@ from core.database import get_db
 from models.contact import Contact, ContactStatus, Industry, Persona, CompanySegment, ICPTier
 from schemas.contact import (
     ContactCreate, ContactUpdate, ContactResponse, ContactListResponse,
-    ContactScoreUpdate, ICPScoreResponse
+    ContactScoreUpdate, ICPScoreResponse, EnrichmentResponse, EnrichmentBatchResponse
 )
+from services.enrichment import enrichment_service
 
 router = APIRouter()
 
@@ -281,4 +282,119 @@ def get_segment_stats(db: Session = Depends(get_db)):
         "average_score": round(float(avg_score), 1),
         "total_contacts": db.query(Contact).count(),
         "high_priority_count": db.query(Contact).filter(Contact.icp_score >= 8).count(),
+    }
+
+
+# =============================================================================
+# Enrichment Endpoints
+# =============================================================================
+
+@router.post("/{contact_id}/enrich", response_model=EnrichmentResponse)
+async def enrich_contact(contact_id: int, db: Session = Depends(get_db)):
+    """
+    Enrich a single contact with Lusha data and auto-detect ICP criteria
+
+    This will:
+    - Fetch company/person data from Lusha API (if configured)
+    - Auto-detect company segment from available data
+    - Infer ICP criteria (ISCC, multi-sites EU, etc.)
+    - Recalculate ICP score
+    """
+    contact = db.query(Contact).filter(Contact.id == contact_id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    result = await enrichment_service.enrich_contact(contact, db)
+
+    return EnrichmentResponse(
+        contact_id=contact.id,
+        enriched=result["enriched"],
+        source=result.get("source"),
+        updates=result.get("updates", {}),
+        icp_updates=result.get("icp_updates", {}),
+        new_score=contact.icp_score,
+        new_tier=contact.icp_tier,
+        errors=result.get("errors", [])
+    )
+
+
+@router.post("/enrich/batch", response_model=EnrichmentBatchResponse)
+async def enrich_contacts_batch(
+    contact_ids: Optional[List[int]] = None,
+    unenriched_only: bool = Query(True, description="Only enrich contacts not yet enriched"),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db)
+):
+    """
+    Enrich multiple contacts in batch
+
+    If contact_ids not provided, will select unenriched contacts automatically.
+    """
+    if contact_ids:
+        contacts = db.query(Contact).filter(Contact.id.in_(contact_ids)).all()
+    else:
+        query = db.query(Contact)
+        if unenriched_only:
+            # Consider "unenriched" as having default values
+            query = query.filter(
+                (Contact.company_segment == CompanySegment.OTHER) |
+                (Contact.company_size == None)
+            )
+        contacts = query.limit(limit).all()
+
+    if not contacts:
+        return EnrichmentBatchResponse(
+            total=0,
+            enriched=0,
+            errors=0,
+            message="No contacts to enrich"
+        )
+
+    result = await enrichment_service.enrich_contacts_batch(contacts, db)
+
+    return EnrichmentBatchResponse(
+        total=result["total"],
+        enriched=result["enriched"],
+        errors=result["errors"],
+        message=f"Enriched {result['enriched']}/{result['total']} contacts"
+    )
+
+
+@router.get("/enrichment/status")
+def get_enrichment_status(db: Session = Depends(get_db)):
+    """Get enrichment status and statistics"""
+    from sqlalchemy import func
+    from core.config import settings
+
+    total = db.query(Contact).count()
+
+    # Count contacts with enrichment data
+    enriched = db.query(Contact).filter(
+        (Contact.company_size != None) |
+        (Contact.company_revenue != None) |
+        (Contact.company_website != None)
+    ).count()
+
+    # Count by segment (non-OTHER)
+    segmented = db.query(Contact).filter(
+        Contact.company_segment != CompanySegment.OTHER
+    ).count()
+
+    # Count with ICP criteria detected
+    with_criteria = db.query(Contact).filter(
+        (Contact.iscc_certified == True) |
+        (Contact.iscc_in_progress == True) |
+        (Contact.multi_sites_eu == True) |
+        (Contact.epr_ppwr_exposure == True) |
+        (Contact.employees_over_100 == True)
+    ).count()
+
+    return {
+        "total_contacts": total,
+        "enriched_contacts": enriched,
+        "unenriched_contacts": total - enriched,
+        "segmented_contacts": segmented,
+        "contacts_with_icp_criteria": with_criteria,
+        "lusha_configured": bool(settings.LUSHA_API_KEY),
+        "auto_enrichment_enabled": settings.ENRICHMENT_AUTO_ENABLED
     }

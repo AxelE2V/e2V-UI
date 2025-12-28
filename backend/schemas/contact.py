@@ -121,3 +121,23 @@ class ICPScoreResponse(BaseModel):
     icp_tier: ICPTier
     priority_label: str
     scoring_breakdown: dict
+
+
+class EnrichmentResponse(BaseModel):
+    """Réponse d'enrichissement d'un contact"""
+    contact_id: int
+    enriched: bool
+    source: Optional[str] = None  # "lusha", "inferred", etc.
+    updates: dict = {}  # Champs mis à jour
+    icp_updates: dict = {}  # Critères ICP détectés
+    new_score: int
+    new_tier: Optional[ICPTier] = None
+    errors: List[str] = []
+
+
+class EnrichmentBatchResponse(BaseModel):
+    """Réponse d'enrichissement en batch"""
+    total: int
+    enriched: int
+    errors: int
+    message: str

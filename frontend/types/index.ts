@@ -207,3 +207,59 @@ export interface TodayActions {
   other_actions: number
   actions: TodayActionItem[]
 }
+
+// ICP Scoring types
+export interface ContactScoreUpdate {
+  company_segment?: CompanySegment
+  iscc_certified?: boolean
+  iscc_in_progress?: boolean
+  multi_sites_eu?: boolean
+  epr_ppwr_exposure?: boolean
+  employees_over_100?: boolean
+  visible_it_budget?: boolean
+}
+
+export interface ICPScoreResponse {
+  contact_id: number
+  icp_score: number
+  icp_tier: ICPTier
+  priority_label: string
+  scoring_breakdown: Record<string, number>
+}
+
+export interface SegmentStats {
+  by_tier: Record<string, number>
+  by_segment: Record<string, number>
+  average_score: number
+  total_contacts: number
+  high_priority_count: number
+}
+
+// Enrichment types
+export interface EnrichmentResponse {
+  contact_id: number
+  enriched: boolean
+  source: string | null
+  updates: Record<string, unknown>
+  icp_updates: Record<string, unknown>
+  new_score: number
+  new_tier: ICPTier | null
+  errors: string[]
+}
+
+export interface EnrichmentBatchResponse {
+  total: number
+  enriched: number
+  errors: number
+  message: string
+}
+
+export interface EnrichmentStatus {
+  total_contacts: number
+  enriched_contacts: number
+  unenriched_contacts: number
+  segmented_contacts: number
+  contacts_with_icp_criteria: number
+  lusha_configured: boolean
+  auto_enrichment_enabled: boolean
+}
