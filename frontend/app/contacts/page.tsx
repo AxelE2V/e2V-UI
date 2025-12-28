@@ -17,7 +17,11 @@ import {
   Sparkles,
   Database,
   Zap,
-  MoreVertical
+  MoreVertical,
+  Linkedin,
+  X,
+  ExternalLink,
+  Phone
 } from 'lucide-react'
 import { contactsAPI, hubspotAPI } from '@/lib/api'
 import type { Contact, ICPTier, EnrichmentStatus } from '@/types'
@@ -39,6 +43,7 @@ export default function ContactsPage() {
   const [enriching, setEnriching] = useState(false)
   const [enrichingId, setEnrichingId] = useState<number | null>(null)
   const [enrichmentStatus, setEnrichmentStatus] = useState<EnrichmentStatus | null>(null)
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
 
   const loadContacts = async () => {
     setLoading(true)
@@ -382,6 +387,15 @@ export default function ContactsPage() {
                     {/* Actions */}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
+                        {contact.linkedin_url && (
+                          <button
+                            onClick={() => setSelectedContact(contact)}
+                            className="p-1.5 text-gray-400 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
+                            title="Voir profil LinkedIn"
+                          >
+                            <Linkedin className="h-4 w-4" />
+                          </button>
+                        )}
                         {!contact.phone && (
                           <button
                             onClick={() => handleEnrichContact(contact.id)}
@@ -440,6 +454,179 @@ export default function ContactsPage() {
             >
               Suivant
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* LinkedIn Preview Panel */}
+      {selectedContact && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setSelectedContact(null)}
+          />
+
+          {/* Panel */}
+          <div className="relative w-full max-w-lg bg-white shadow-xl animate-in slide-in-from-right">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Linkedin className="h-5 w-5 text-blue-700" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">
+                    {selectedContact.first_name} {selectedContact.last_name}
+                  </h3>
+                  <p className="text-sm text-gray-500">{selectedContact.company}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedContact(null)}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Contact Info */}
+            <div className="p-4 border-b space-y-3">
+              <div className="flex items-center gap-3 text-sm">
+                <Mail className="h-4 w-4 text-gray-400" />
+                <a href={`mailto:${selectedContact.email}`} className="text-blue-600 hover:underline">
+                  {selectedContact.email}
+                </a>
+              </div>
+              {selectedContact.phone && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Phone className="h-4 w-4 text-gray-400" />
+                  <a href={`tel:${selectedContact.phone}`} className="text-blue-600 hover:underline">
+                    {selectedContact.phone}
+                  </a>
+                </div>
+              )}
+              {selectedContact.job_title && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Building className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-600">{selectedContact.job_title}</span>
+                </div>
+              )}
+              {/* ICP Score */}
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
+                  getScoreColor(selectedContact.icp_score)
+                )}>
+                  {selectedContact.icp_score}
+                </div>
+                <span className="text-sm text-gray-500">Score ICP</span>
+              </div>
+            </div>
+
+            {/* LinkedIn Preview Card */}
+            <div className="p-4 flex-1 overflow-y-auto">
+              {selectedContact.linkedin_url && (
+                <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-100 overflow-hidden">
+                  {/* LinkedIn-style header */}
+                  <div className="h-16 bg-gradient-to-r from-blue-600 to-blue-700" />
+
+                  {/* Profile card */}
+                  <div className="px-4 pb-4 -mt-8">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white font-bold text-xl border-4 border-white shadow-lg">
+                      {selectedContact.first_name?.[0]}{selectedContact.last_name?.[0]}
+                    </div>
+
+                    <div className="mt-3">
+                      <h4 className="font-semibold text-gray-900 text-lg">
+                        {selectedContact.first_name} {selectedContact.last_name}
+                      </h4>
+                      {selectedContact.job_title && (
+                        <p className="text-gray-600">{selectedContact.job_title}</p>
+                      )}
+                      {selectedContact.company && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          <Building className="h-3.5 w-3.5 inline mr-1" />
+                          {selectedContact.company}
+                        </p>
+                      )}
+                      {selectedContact.company_country && (
+                        <p className="text-sm text-gray-400 mt-1">
+                          📍 {selectedContact.company_country}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* ICP Signals */}
+                    <div className="mt-4 flex flex-wrap gap-1.5">
+                      {selectedContact.iscc_certified && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                          ✓ ISCC+
+                        </span>
+                      )}
+                      {selectedContact.iscc_in_progress && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                          ⏳ ISCC en cours
+                        </span>
+                      )}
+                      {selectedContact.multi_sites_eu && (
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                          🇪🇺 Multi-sites EU
+                        </span>
+                      )}
+                      {selectedContact.epr_ppwr_exposure && (
+                        <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                          📋 EPR/PPWR
+                        </span>
+                      )}
+                      {selectedContact.employees_over_100 && (
+                        <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                          👥 100+ employés
+                        </span>
+                      )}
+                    </div>
+
+                    {/* LinkedIn link */}
+                    <div className="mt-4 pt-4 border-t">
+                      <p className="text-xs text-gray-400 mb-2">Profil LinkedIn</p>
+                      <p className="text-sm text-blue-600 truncate">{selectedContact.linkedin_url}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedContact.notes && (
+                <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                  <p className="text-xs font-medium text-yellow-800 mb-1">Notes</p>
+                  <p className="text-sm text-yellow-900">{selectedContact.notes}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-50 border-t">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setSelectedContact(null)}
+                >
+                  Fermer
+                </Button>
+                <a
+                  href={selectedContact.linkedin_url || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1"
+                >
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                    <Linkedin className="h-4 w-4 mr-2" />
+                    LinkedIn
+                  </Button>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       )}
